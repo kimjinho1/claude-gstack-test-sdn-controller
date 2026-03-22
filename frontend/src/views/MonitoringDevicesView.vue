@@ -87,27 +87,33 @@
               <!-- 필드 목록 -->
               <div class="field-list">
                 <div class="field-item">
-                  <span class="field-lbl">IP</span>
-                  <span class="field-val mono-val">{{ selectedDevice.ip_addr }}</span>
-                </div>
-                <div class="field-item">
                   <span class="field-lbl">MAC</span>
+                  <span class="field-sep">:</span>
                   <span class="field-val mono-val">{{ selectedDevice.mac_addr || "—" }}</span>
                 </div>
                 <div class="field-item">
+                  <span class="field-lbl">IP</span>
+                  <span class="field-sep">:</span>
+                  <span class="field-val mono-val">{{ selectedDevice.ip_addr }}</span>
+                </div>
+                <div class="field-item">
                   <span class="field-lbl">모델</span>
+                  <span class="field-sep">:</span>
                   <span class="field-val">{{ selectedDevice.model || "—" }}</span>
                 </div>
                 <div class="field-item">
                   <span class="field-lbl">시리얼</span>
+                  <span class="field-sep">:</span>
                   <span class="field-val mono-val">{{ selectedDevice.serial_no || "—" }}</span>
                 </div>
                 <div class="field-item">
                   <span class="field-lbl">SW 버전</span>
+                  <span class="field-sep">:</span>
                   <span class="field-val">{{ selectedDevice.sw_version || "—" }}</span>
                 </div>
                 <div class="field-item">
                   <span class="field-lbl">업타임</span>
+                  <span class="field-sep">:</span>
                   <span class="field-val uptime-val">{{ parseUptime(selectedDevice.uptime) }}</span>
                 </div>
               </div>
@@ -515,22 +521,31 @@ td { padding: 0.7rem 1rem; border-top: 1px solid var(--border-color); font-size:
 }
 .field-item {
   display: flex;
-  flex-direction: column;
-  padding: 0.55rem 0;
+  align-items: baseline;
+  gap: 0.3rem;
+  padding: 0.45rem 0;
   border-bottom: 1px solid var(--border-color);
 }
 .field-item:last-child { border-bottom: none; }
 .field-lbl {
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: 0.18rem;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  min-width: 60px;
+  flex-shrink: 0;
+}
+.field-sep {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
 }
 .field-val {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   color: var(--text-primary);
   font-weight: 500;
+  word-break: break-all;
 }
 .mono-val { font-family: monospace; font-size: 0.88rem; }
 .uptime-val { font-family: monospace; color: var(--accent-hover); font-weight: 600; }
