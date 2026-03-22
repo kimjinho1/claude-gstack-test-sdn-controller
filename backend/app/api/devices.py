@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,6 +17,10 @@ from app.schemas.device import (
 )
 
 router = APIRouter(prefix="/devices", tags=["devices"])
+
+
+class BulkDeleteRequest(BaseModel):
+    ids: list[int]
 
 
 @router.get("", response_model=list[DeviceResponse])
@@ -131,6 +136,18 @@ async def delete_device(
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
     await db.delete(device)
+    await db.commit()
+
+
+@router.post("/bulk-delete", status_code=204)
+async def bulk_delete_devices(
+    body: BulkDeleteRequest,
+    _: Annotated[User, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    result = await db.execute(select(Device).where(Device.id.in_(body.ids)))
+    for device in result.scalars().all():
+        await db.delete(device)
     await db.commit()
 
 

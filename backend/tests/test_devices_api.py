@@ -50,11 +50,12 @@ async def test_register_device_triggers_poll(client, admin_token):
 @pytest.mark.asyncio
 async def test_register_device_invalid_mac(client, admin_token):
     site_id, building_id = await _seed_topology(client, admin_token)
+    # Colons-free MAC is now accepted and auto-normalized to AA:BB:CC:DD:EE:FF
     resp = await client.post(
         "/devices",
         json={
             "name": "SW-01",
-            "mac_addr": "AABBCCDDEEFF",  # missing colons
+            "mac_addr": "AABBCCDDEEFF",
             "ip_addr": "10.0.1.1",
             "site_id": site_id,
             "building_id": building_id,
@@ -64,7 +65,25 @@ async def test_register_device_invalid_mac(client, admin_token):
         },
         headers={"Authorization": f"Bearer {admin_token}"},
     )
-    assert resp.status_code == 422
+    assert resp.status_code == 201
+    assert resp.json()["mac_addr"] == "AA:BB:CC:DD:EE:FF"
+
+    # Truly invalid MAC (not 12 hex chars) must still reject
+    resp2 = await client.post(
+        "/devices",
+        json={
+            "name": "SW-02",
+            "mac_addr": "ZZZZZZZZZZZZ",  # non-hex chars
+            "ip_addr": "10.0.1.2",
+            "site_id": site_id,
+            "building_id": building_id,
+            "protocol": "SSH",
+            "ssh_id": "admin",
+            "ssh_password": "cisco123",
+        },
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp2.status_code == 422
 
 
 @pytest.mark.asyncio

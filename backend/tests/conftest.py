@@ -65,7 +65,7 @@ async def client(db_engine):
         session.add(User(
             username="viewer",
             password_hash=hash_password("viewer"),
-            role=UserRole.VIEWER,
+            role=UserRole.USER,
             must_change_password=False,
         ))
         await session.commit()
