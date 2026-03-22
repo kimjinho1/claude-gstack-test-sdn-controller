@@ -1,0 +1,102 @@
+<template>
+  <div class="device-node" :class="statusClass">
+    <Handle type="target" :position="Position.Top" />
+    <div class="node-header">
+      <span class="status-dot" />
+      <span class="node-name">{{ data.name }}</span>
+    </div>
+    <div class="node-ip">{{ data.ip_addr }}</div>
+    <div class="node-footer">
+      <span class="badge proto">{{ data.protocol }}</span>
+      <span class="badge" :class="statusClass">{{ data.status }}</span>
+    </div>
+    <Handle type="source" :position="Position.Bottom" />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { Handle, Position } from '@vue-flow/core'
+
+const props = defineProps<{
+  data: {
+    id: number
+    name: string
+    ip_addr: string
+    status: string
+    protocol: string
+    model: string | null
+  }
+}>()
+
+const statusClass = computed(() => props.data.status.toLowerCase())
+</script>
+
+<style scoped>
+.device-node {
+  background: #1a2833;
+  border: 1.5px solid #2a3d4f;
+  border-radius: 6px;
+  padding: 10px 14px;
+  min-width: 180px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+.device-node:hover {
+  border-color: #1d6fa4;
+  box-shadow: 0 0 0 2px rgba(29, 111, 164, 0.25);
+}
+.device-node.managed  { border-left: 3px solid #0f9960; }
+.device-node.error    { border-left: 3px solid #db3737; }
+.device-node.pending  { border-left: 3px solid #d9822b; }
+.device-node.unregistered { border-left: 3px solid #5c7080; }
+
+.node-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 3px;
+}
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #5c7080;
+}
+.managed  .status-dot { background: #0f9960; box-shadow: 0 0 6px rgba(15,153,96,0.6); }
+.error    .status-dot { background: #db3737; box-shadow: 0 0 6px rgba(219,55,55,0.6); }
+.pending  .status-dot { background: #d9822b; box-shadow: 0 0 6px rgba(217,130,43,0.5); }
+
+.node-name {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #d4dbe4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+.node-ip {
+  font-size: 0.72rem;
+  color: #6a8099;
+  margin-bottom: 7px;
+  padding-left: 15px;
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+.node-footer { display: flex; gap: 5px; }
+.badge {
+  font-size: 0.62rem;
+  padding: 1px 6px;
+  border-radius: 2px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.badge.proto       { background: #0d2a45; color: #5aabdb; }
+.badge.managed     { background: #092b1f; color: #0f9960; }
+.badge.error       { background: #2e0a0a; color: #db3737; }
+.badge.pending     { background: #2e1a06; color: #d9822b; }
+.badge.unregistered { background: #12202a; color: #5c7080; }
+</style>

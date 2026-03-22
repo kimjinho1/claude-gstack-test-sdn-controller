@@ -11,6 +11,8 @@ const router = createRouter({
       component: () => import("@/views/DashboardLayout.vue"),
       children: [
         { path: "", redirect: "/devices" },
+        { path: "", redirect: "/topology" },
+        { path: "topology", name: "Topology", component: () => import("@/views/TopologyView.vue") },
         { path: "users", name: "Users", component: () => import("@/views/UsersView.vue") },
         { path: "groups-manage", name: "GroupManage", component: () => import("@/views/GroupManageView.vue") },
         { path: "devices", name: "Devices", component: () => import("@/views/DevicesView.vue") },
@@ -18,7 +20,7 @@ const router = createRouter({
         { path: "alarms", name: "Alarms", component: () => import("@/views/AlarmsView.vue") },
       ],
     },
-    { path: "/:pathMatch(.*)*", redirect: "/devices" },
+    { path: "/:pathMatch(.*)*", redirect: "/topology" },
   ],
 });
 

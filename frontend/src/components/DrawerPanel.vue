@@ -27,28 +27,33 @@ defineEmits<{ (e: "update:modelValue", v: boolean): void }>();
 
 <style scoped>
 .drawer-backdrop {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 400;
+  position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 400;
 }
 .drawer {
-  position: fixed; top: 0; right: 0; height: 100vh; width: 440px;
-  background: white; z-index: 401;
+  position: fixed; top: 0; right: 0; height: 100vh; width: 480px;
+  background: #131f2b; z-index: 401;
   display: flex; flex-direction: column;
-  box-shadow: -4px 0 32px rgba(0,0,0,0.14);
+  box-shadow: -6px 0 40px rgba(0,0,0,0.5);
+  border-left: 1px solid #1e2d3a;
 }
 .drawer-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 1.25rem 1.5rem; border-bottom: 1px solid #e2e8f0; flex-shrink: 0;
+  padding: 1rem 1.25rem; border-bottom: 1px solid #1e2d3a; flex-shrink: 0;
 }
-.drawer-header h3 { font-size: 1rem; font-weight: 700; margin: 0; color: #1a202c; }
+.drawer-header h3 {
+  font-size: 0.88rem; font-weight: 700; margin: 0; color: #d4dbe4;
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
 .close-btn {
-  background: none; border: none; cursor: pointer; font-size: 1.1rem;
-  color: #a0aec0; padding: 0.2rem 0.4rem; border-radius: 4px; line-height: 1;
+  background: none; border: none; cursor: pointer; font-size: 1rem;
+  color: #5c7080; padding: 0.2rem 0.5rem; border-radius: 3px; line-height: 1; transition: all 0.12s;
 }
-.close-btn:hover { background: #f7fafc; color: #4a5568; }
-.drawer-body { flex: 1; overflow-y: auto; padding: 1.5rem; }
+.close-btn:hover { background: #1a2a3a; color: #d4dbe4; }
+.drawer-body { flex: 1; overflow-y: auto; padding: 1.25rem; }
 .drawer-footer {
-  padding: 1rem 1.5rem; border-top: 1px solid #e2e8f0;
+  padding: 0.85rem 1.25rem; border-top: 1px solid #1e2d3a;
   display: flex; gap: 0.5rem; justify-content: flex-end; flex-shrink: 0;
+  background: #0e1720;
 }
 
 /* Transitions */

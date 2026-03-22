@@ -140,6 +140,19 @@
           </div>
         </template>
 
+        <!-- Topology parent link -->
+        <div class="divider" />
+        <div class="section-heading">토폴로지 링크</div>
+        <div class="form-field">
+          <label class="form-label">상위 장비 (부모)</label>
+          <select v-model="editForm.parent_id" class="form-input">
+            <option :value="null">없음 (독립 장비)</option>
+            <option v-for="d in otherDevices" :key="d.id" :value="d.id">
+              {{ d.name }} — {{ d.ip_addr }}
+            </option>
+          </select>
+        </div>
+
         <div v-if="editError" class="error-msg">{{ editError }}</div>
       </div>
 
@@ -202,6 +215,8 @@ interface EditForm {
   rest_id: string;
   rest_password: string;
   rest_port: number | null;
+  parent_id: number | null;
+  _parentLinkId: number | null;
 }
 
 const drawerOpen = ref(false);
@@ -209,7 +224,21 @@ const editForm = ref<EditForm | null>(null);
 const editError = ref("");
 const editLoading = ref(false);
 
-function openEdit(device: any) {
+const otherDevices = computed(() =>
+  editForm.value ? deviceStore.devices.filter((d) => d.id !== editForm.value!._device.id) : []
+);
+
+async function openEdit(device: any) {
+  editError.value = "";
+  // Fetch current parent link (where child_id == this device)
+  let parent_id: number | null = null;
+  let _parentLinkId: number | null = null;
+  try {
+    const { data } = await api.get("/device-links");
+    const parentLink = data.find((l: any) => l.child_id === device.id);
+    if (parentLink) { parent_id = parentLink.parent_id; _parentLinkId = parentLink.id; }
+  } catch { /* ignore */ }
+
   editForm.value = {
     _device: device,
     name: device.name,
@@ -220,8 +249,9 @@ function openEdit(device: any) {
     rest_id: device.rest_id ?? "",
     rest_password: "",
     rest_port: device.rest_port ?? null,
+    parent_id,
+    _parentLinkId,
   };
-  editError.value = "";
   drawerOpen.value = true;
 }
 
@@ -252,6 +282,24 @@ async function submitEdit() {
     }
 
     await api.patch(`/devices/${editForm.value._device.id}`, payload);
+
+    // Handle parent link change
+    const newParentId = editForm.value.parent_id;
+    const oldParentLinkId = editForm.value._parentLinkId;
+    const oldParentId = oldParentLinkId
+      ? ((await api.get("/device-links")).data.find((l: any) => l.id === oldParentLinkId)?.parent_id ?? null)
+      : null;
+
+    if (newParentId !== oldParentId) {
+      if (oldParentLinkId) await api.delete(`/device-links/${oldParentLinkId}`);
+      if (newParentId) {
+        await api.post("/device-links", {
+          parent_id: newParentId,
+          child_id: editForm.value._device.id,
+        });
+      }
+    }
+
     drawerOpen.value = false;
     loadDevices();
   } catch (e: any) {
@@ -330,97 +378,102 @@ onMounted(loadDevices);
 <style scoped>
 /* ── Layout ── */
 .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem; }
-h2 { font-size: 1.15rem; font-weight: 700; color: #182026; }
-.breadcrumb { color: #5c7080; font-size: 0.83rem; margin-top: 0.2rem; }
+h2 { font-size: 1.1rem; font-weight: 700; color: #d4dbe4; text-transform: uppercase; letter-spacing: 0.05em; }
+.breadcrumb { color: #6a8099; font-size: 0.82rem; margin-top: 0.2rem; }
 .header-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
 
 /* ── Inputs ── */
 .search {
-  padding: 0.4rem 0.7rem; border: 1px solid #dce1e7; border-radius: 2px;
-  font-size: 0.88rem; width: 180px; outline: none; color: #182026;
+  padding: 0.4rem 0.7rem; border: 1px solid #2a3a4a; border-radius: 2px;
+  font-size: 0.87rem; width: 180px; outline: none; color: #d4dbe4;
+  background: #0e1a26;
 }
 .search:focus { border-color: #1d6fa4; }
+.search::placeholder { color: #4a6075; }
 .filter-select {
-  padding: 0.4rem 0.7rem; border: 1px solid #dce1e7; border-radius: 2px;
-  font-size: 0.88rem; background: white; color: #182026; outline: none;
+  padding: 0.4rem 0.7rem; border: 1px solid #2a3a4a; border-radius: 2px;
+  font-size: 0.87rem; background: #0e1a26; color: #d4dbe4; outline: none;
 }
 .filter-select:focus { border-color: #1d6fa4; }
 
 /* ── Buttons ── */
 .btn-primary {
   padding: 0.4rem 0.9rem; background: #1d6fa4; color: white; border: none;
-  border-radius: 2px; cursor: pointer; font-size: 0.88rem; font-weight: 500;
+  border-radius: 2px; cursor: pointer; font-size: 0.87rem; font-weight: 600;
+  transition: background 0.15s;
 }
-.btn-primary:hover { background: #185f8a; }
-.btn-primary:disabled { background: #8ab4cc; cursor: not-allowed; }
+.btn-primary:hover { background: #2585c2; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-secondary {
-  padding: 0.4rem 0.9rem; background: white; color: #182026;
-  border: 1px solid #dce1e7; border-radius: 2px; cursor: pointer; font-size: 0.88rem;
+  padding: 0.4rem 0.9rem; background: transparent; color: #8fa0b4;
+  border: 1px solid #2a3a4a; border-radius: 2px; cursor: pointer; font-size: 0.87rem;
+  transition: all 0.15s;
 }
-.btn-secondary:hover { background: #ebf1f5; }
+.btn-secondary:hover { background: #1a2a3a; color: #d4dbe4; }
 .btn-danger {
-  padding: 0.4rem 0.9rem; background: #c23030; color: white; border: none;
-  border-radius: 2px; cursor: pointer; font-size: 0.88rem;
+  padding: 0.4rem 0.9rem; background: #3a0a0a; color: #db3737; border: 1px solid #8b2222;
+  border-radius: 2px; cursor: pointer; font-size: 0.87rem; font-weight: 600;
+  transition: all 0.15s;
 }
-.btn-danger:hover { background: #a82a2a; }
+.btn-danger:hover { background: #5a1212; }
 .btn-link {
-  padding: 0.4rem 0.5rem; background: none; border: none; color: #1d6fa4;
-  cursor: pointer; font-size: 0.88rem; margin-right: auto;
+  padding: 0.4rem 0.5rem; background: none; border: none; color: #4dacf7;
+  cursor: pointer; font-size: 0.87rem; margin-right: auto;
 }
 .btn-link:hover { text-decoration: underline; }
 
 /* ── Table ── */
-.device-table { width: 100%; border-collapse: collapse; background: white; border: 1px solid #dce1e7; border-radius: 2px; }
-thead { background: #f5f8fa; }
+.device-table { width: 100%; border-collapse: collapse; background: #111c27; border: 1px solid #1e2d3a; border-radius: 3px; }
+thead { background: #0d1720; }
 th {
-  padding: 0.6rem 1rem; text-align: left; font-size: 0.72rem; font-weight: 600;
-  color: #5c7080; text-transform: uppercase; letter-spacing: 0.04em;
-  border-bottom: 1px solid #dce1e7;
+  padding: 0.6rem 1rem; text-align: left; font-size: 0.7rem; font-weight: 700;
+  color: #6a8099; text-transform: uppercase; letter-spacing: 0.06em;
+  border-bottom: 1px solid #1e2d3a;
 }
-td { padding: 0.75rem 1rem; border-top: 1px solid #ebf1f5; font-size: 0.88rem; color: #182026; }
+td { padding: 0.72rem 1rem; border-top: 1px solid #172534; font-size: 0.87rem; color: #c4d0dc; }
 .device-row { cursor: pointer; transition: background 0.1s; }
-.device-row:hover td { background: #f5f8fa; }
-.empty-row { text-align: center; color: #5c7080; padding: 2rem 1rem !important; }
-.mono { font-family: monospace; font-size: 0.82rem; }
+.device-row:hover td { background: #172534; }
+.empty-row { text-align: center; color: #4a6075; padding: 2.5rem 1rem !important; }
+.mono { font-family: 'Consolas', 'Monaco', monospace; font-size: 0.82rem; color: #8fa0b4; }
 .proto-badge {
-  background: #ebf1f5; color: #1d6fa4; padding: 0.15rem 0.5rem;
-  border-radius: 2px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em;
+  background: #0d2a45; color: #5aabdb; padding: 0.15rem 0.5rem;
+  border-radius: 2px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em;
 }
-.loading { text-align: center; padding: 3rem; color: #5c7080; }
+.loading { text-align: center; padding: 3rem; color: #6a8099; }
 
 /* ── Context menu ── */
 .ctx-menu {
-  position: fixed; background: white; border: 1px solid #dce1e7;
-  border-radius: 2px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  z-index: 500; min-width: 100px; padding: 0.2rem 0;
+  position: fixed; background: #131f2b; border: 1px solid #2a3a4a;
+  border-radius: 3px; box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  z-index: 500; min-width: 110px; padding: 0.25rem 0;
 }
 .ctx-item {
   display: block; width: 100%; padding: 0.5rem 1rem; background: none;
-  border: none; text-align: left; cursor: pointer; font-size: 0.875rem; color: #182026;
+  border: none; text-align: left; cursor: pointer; font-size: 0.85rem; color: #c4d0dc;
 }
-.ctx-item:hover { background: #f5f8fa; }
-.ctx-danger { color: #c23030; }
-.ctx-danger:hover { background: #fdf0f0; }
+.ctx-item:hover { background: #1a2a3a; }
+.ctx-danger { color: #db3737; }
+.ctx-danger:hover { background: #2e0a0a; }
 
 /* ── Drawer content ── */
 .drawer-content { display: flex; flex-direction: column; }
 .section-heading {
-  font-size: 0.72rem; font-weight: 700; color: #5c7080;
-  text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;
+  font-size: 0.7rem; font-weight: 700; color: #6a8099;
+  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.8rem;
 }
-.divider { border: none; border-top: 1px solid #ebf1f5; margin: 1.25rem 0; }
+.divider { border: none; border-top: 1px solid #1e2d3a; margin: 1.2rem 0; }
 
 .info-section { margin-bottom: 0; }
-.info-grid { display: grid; grid-template-columns: 7rem 1fr; gap: 0.45rem 1rem; align-items: center; }
-.info-label { font-size: 0.83rem; color: #5c7080; }
+.info-grid { display: grid; grid-template-columns: 7.5rem 1fr; gap: 0.5rem 1rem; align-items: center; }
+.info-label { font-size: 0.82rem; color: #6a8099; }
 
-.form-field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.75rem; }
-.form-label { font-size: 0.82rem; font-weight: 500; color: #182026; }
+.form-field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.8rem; }
+.form-label { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #6a8099; }
 .form-input {
-  padding: 0.45rem 0.65rem; border: 1px solid #dce1e7; border-radius: 2px;
-  font-size: 0.88rem; color: #182026; outline: none;
+  padding: 0.45rem 0.65rem; border: 1px solid #2a3a4a; border-radius: 2px;
+  font-size: 0.87rem; color: #d4dbe4; background: #0e1a26; outline: none;
 }
 .form-input:focus { border-color: #1d6fa4; }
-.hint { font-size: 0.75rem; color: #5c7080; font-weight: 400; }
-.error-msg { color: #c23030; font-size: 0.83rem; margin-top: 0.75rem; }
+.hint { font-size: 0.73rem; color: #6a8099; font-weight: 400; }
+.error-msg { color: #db3737; font-size: 0.82rem; margin-top: 0.75rem; }
 </style>
