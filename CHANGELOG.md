@@ -2,6 +2,28 @@
 
 All notable changes to the SDN Controller project will be documented in this file.
 
+## [0.1.4.0] - 2026-03-22
+
+### Added
+- **Dark/Light theme system** (`theme.css`, `theme.ts`): CSS custom properties for all semantic colors (`--bg-base`, `--text-primary`, `--accent-primary`, etc.) with dark (default) and light variants. Controlled via `[data-theme]` on `<html>`.
+- **Theme Pinia store** (`stores/theme.ts`): persists preference to `localStorage`, safe for private browsing and SSR environments.
+- **Theme toggle button** in topbar: `☀️`/`🌙` switches themes live without page reload.
+- **Collapsible sidebar**: hamburger `☰` button toggles sidebar with smooth max-width + opacity animation.
+- **FOUC prevention**: synchronous `<script>` in `index.html` applies saved theme before Vue mounts — eliminates dark-to-light flash for light-mode users.
+
+### Changed
+- All views migrated from hardcoded hex colors to CSS custom properties: `AlarmsView`, `ChangePasswordView`, `DevicesView`, `DeviceDetailView`, `GroupManageView`, `LoginView`, `TopologyView`, `UsersView`.
+- All components migrated to CSS vars: `DeviceNode`, `DrawerPanel`, `RegisterDeviceModal`, `StatusBadge`, `TopologyTree`.
+- `DashboardLayout.vue`: collapsible sidebar + theme toggle added; group tree panel `🌲` now accessible from all routes.
+- `TopologyView.vue`: VueFlow background dot grid uses `var(--border-color)` for theme-aware rendering.
+
+### Fixed
+- `GroupManageView`, `UsersView`, `AlarmsView`: text was invisible in dark mode due to hardcoded white/light background colors — replaced with CSS vars throughout.
+- Hardcoded `#ff6b6b` color in critical alarm badge, topology error banner, and dashboard alarm badge replaced with `var(--danger)` for theme consistency.
+- `.device-node:hover` box-shadow and status dot glow shadows converted to `color-mix()` with semantic CSS vars — no longer drift when theme variables are updated.
+- `RegisterDeviceModal` section divider now uses `--border-subtle` (was inconsistently `--border-color`).
+- Sidebar and tree-panel `<Transition>` animations fixed: `width` → `max-width` transition which correctly works with Vue's `v-show`.
+
 ## [0.1.3.0] - 2026-03-22
 
 ### Added
