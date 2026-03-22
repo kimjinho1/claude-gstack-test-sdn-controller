@@ -116,4 +116,5 @@ volumes:
 networks:
   default:
   sdn-lab:
-    external: true
+    # Shared network for cEOS virtual device containers (created by docker-compose)
+    # cEOS containers are connected to this network at runtime by the SDN controller
