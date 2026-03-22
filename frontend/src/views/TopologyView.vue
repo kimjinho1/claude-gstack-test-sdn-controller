@@ -47,7 +47,7 @@
         <Controls :show-interactive="false" class="topo-controls" />
         <MiniMap
           :node-color="minimapColor"
-          node-border-radius="3"
+          :node-border-radius="3"
           mask-color="rgba(8,13,20,0.85)"
           class="topo-minimap"
         />
@@ -132,6 +132,7 @@ import {
   type NodeMouseEvent,
   type EdgeMouseEvent,
   type Connection,
+  type NodeTypesObject,
 } from '@vue-flow/core'
 import { Background, BackgroundVariant } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
@@ -187,7 +188,7 @@ const linkLoading = ref(false)
 
 const selectedEdgeId = ref<string | null>(null)
 
-const nodeTypes = { device: markRaw(DeviceNode) }
+const nodeTypes: NodeTypesObject = { device: markRaw(DeviceNode) as NodeTypesObject[string] }
 
 const defaultEdgeOptions = {
   type: 'smoothstep',
@@ -209,7 +210,8 @@ const pendingCount = computed(() =>
 
 const selectedEdgeLabel = computed(() => {
   if (!selectedEdgeId.value) return ''
-  const edge = edges.value.find(e => e.id === selectedEdgeId.value)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const edge = (edges.value as any[]).find((e: any) => e.id === selectedEdgeId.value) as Edge | undefined
   if (!edge) return ''
   const parent = allDevices.value.find(d => String(d.id) === edge.source)
   const child = allDevices.value.find(d => String(d.id) === edge.target)
@@ -261,6 +263,8 @@ async function loadTopology() {
 
     nodes.value = applyLayout(newNodes, newEdges)
     edges.value = newEdges
+  } catch {
+    topologyError.value = '토폴로지 로딩에 실패했습니다. 페이지를 새로고침하세요.'
   } finally {
     loading.value = false
   }
@@ -268,6 +272,7 @@ async function loadTopology() {
 
 // ── actions ────────────────────────────────────────────────────────────────
 function doLayout() {
+  // @ts-ignore — vue-flow edges type is too deep for tsc inference
   nodes.value = applyLayout([...nodes.value], edges.value)
 }
 
@@ -286,7 +291,11 @@ function minimapColor(node: Node): string {
 // drag-to-connect creates a new link
 async function onConnect(params: Connection) {
   if (!params.source || !params.target) return
-  await createLink(Number(params.source), Number(params.target))
+  try {
+    await createLink(Number(params.source), Number(params.target))
+  } catch {
+    topologyError.value = '링크 생성에 실패했습니다. 다시 시도하세요.'
+  }
 }
 
 function onNodeClick({ node }: NodeMouseEvent) {

@@ -115,3 +115,19 @@ SDN 컨텍스트에서 링크는 논리 네트워크 토폴로지를 의미하�
 adversarial review (v0.1.3.0 shipping)에서 발견됨.
 
 **Depends on / blocked by:** 없음
+
+---
+
+## TODO-7: 폴링 실패 시 스테일 데이터 보존 문제
+
+**What:** `_poll_device`에서 SSH 명령 파싱 실패 시 `info.uptime or device.uptime` 패턴으로 이전 스테일 값이 유지되어 `consecutive_failures=0`으로 리셋됨
+
+**Why:** 펌웨어 업그레이드 후 정규식 매칭 실패 시 장비 상태가 MANAGED + 오래된 업타임으로 표시됨. 실제로는 파싱이 깨진 상태인데 헬스가 정상으로 보임.
+
+**Pros:** 파싱 성공/실패를 명시적으로 구분하면 펌웨어 버전별 파싱 이상 조기 감지 가능.
+
+**Cons:** 스키마 변경 없이 `SystemInfo`에 `parse_success: bool` 플래그 추가로 대응 가능.
+
+**Context:** adversarial review (v0.1.9.0)에서 발견. `backend/app/protocols/ssh/ssh_driver.py` `_poll_device` 함수. 단기 해결: 모든 주요 필드가 빈 문자열이면 스테일로 판단하여 `consecutive_failures` 증가.
+
+**Depends on / blocked by:** 없음

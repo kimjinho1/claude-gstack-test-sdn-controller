@@ -93,10 +93,14 @@ async def list_virtual_devices(
 ):
     result = await db.execute(select(VirtualDevice).order_by(VirtualDevice.id))
     devices = result.scalars().all()
-    # Sync status from Docker for running containers (offloaded to thread pool)
-    for vd in devices:
-        if vd.container_id and vd.status in ("running", "starting"):
-            vd.status = await asyncio.to_thread(_docker_container_status, vd.container_id)
+    # Sync status from Docker for running containers — all inspects run concurrently
+    active = [vd for vd in devices if vd.container_id and vd.status in ("running", "starting")]
+    if active:
+        statuses = await asyncio.gather(
+            *[asyncio.to_thread(_docker_container_status, vd.container_id) for vd in active]
+        )
+        for vd, new_status in zip(active, statuses):
+            vd.status = new_status
     if db.dirty:
         await db.commit()
     return devices

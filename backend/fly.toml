@@ -1,0 +1,56 @@
+# SDN Controller — Fly.io configuration
+# Deploy: flyctl deploy --config backend/fly.toml
+# First deploy: flyctl launch --config backend/fly.toml --no-deploy, then set secrets, then flyctl deploy
+
+app = "sdn-controller"        # ← fly apps create sdn-controller 으로 생성한 앱 이름으로 변경
+primary_region = "nrt"        # Tokyo (한국에서 가장 가까운 리전)
+
+[build]
+# build context = backend/ (fly.toml 위치 기준)
+# 기존 backend/Dockerfile 그대로 사용
+
+[deploy]
+# ★ 핵심 수정 — DB 충돌 방지:
+# 이전 인스턴스가 아직 트래픽을 받는 동안 migration이 먼저 완료됨.
+# 완료 후 새 인스턴스가 올라오고 이전 인스턴스가 내려감.
+# 절대 두 프로세스가 동시에 마이그레이션을 실행하지 않음.
+release_command = "alembic upgrade head"
+
+[env]
+  PYTHONPATH = "/app"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [[http_service.checks]]
+    grace_period = "30s"
+    interval = "15s"
+    method = "GET"
+    path = "/health"
+    timeout = "5s"
+
+# 프로세스 그룹 — 각각 독립 머신으로 실행됨
+[processes]
+  app    = "uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2"
+  worker = "celery -A app.tasks.celery_app worker --loglevel=info --concurrency=4"
+  beat   = "celery -A app.tasks.celery_app beat --loglevel=info"
+
+[[vm]]
+  size    = "shared-cpu-1x"
+  memory  = "512mb"
+  processes = ["app"]
+
+[[vm]]
+  size    = "shared-cpu-1x"
+  memory  = "512mb"
+  processes = ["worker"]
+
+[[vm]]
+  size    = "shared-cpu-1x"
+  memory  = "256mb"
+  processes = ["beat"]

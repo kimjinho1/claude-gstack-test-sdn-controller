@@ -1,0 +1,10 @@
+# Docker build context에서 제외할 파일
+celerybeat-schedule
+__pycache__
+**/__pycache__
+*.pyc
+*.pyo
+.env
+.env.*
+tests/
+*.md
