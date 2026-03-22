@@ -10,7 +10,11 @@ from app.core.database import Base
 class UserRole(str, PyEnum):
     SUPERADMIN = "SUPERADMIN"
     ADMIN = "ADMIN"
-    VIEWER = "VIEWER"
+    USER = "USER"
+    GUEST = "GUEST"
+
+    def level(self) -> int:
+        return {"SUPERADMIN": 4, "ADMIN": 3, "USER": 2, "GUEST": 1}[self.value]
 
 
 class User(Base):
