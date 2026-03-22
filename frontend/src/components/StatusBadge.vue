@@ -20,8 +20,8 @@ const label = computed(() => {
 
 <style scoped>
 .badge { padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.8rem; font-weight: 500; white-space: nowrap; }
-.managed { background: #c6f6d5; color: #22543d; }
-.pending { background: #fefcbf; color: #744210; }
-.error { background: #fed7d7; color: #742a2a; }
-.unregistered { background: #e2e8f0; color: #4a5568; }
+.managed { background: rgba(0,168,84,0.15); color: var(--success); }
+.pending { background: rgba(217,130,43,0.15); color: var(--warning); }
+.error { background: rgba(194,48,48,0.15); color: var(--danger); }
+.unregistered { background: var(--bg-elevated); color: var(--text-muted); }
 </style>

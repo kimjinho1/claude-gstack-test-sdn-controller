@@ -34,8 +34,8 @@ const statusClass = computed(() => props.data.status.toLowerCase())
 
 <style scoped>
 .device-node {
-  background: #1a2833;
-  border: 1.5px solid #2a3d4f;
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-input);
   border-radius: 6px;
   padding: 10px 14px;
   min-width: 180px;
@@ -44,13 +44,13 @@ const statusClass = computed(() => props.data.status.toLowerCase())
   font-family: 'Inter', 'Segoe UI', sans-serif;
 }
 .device-node:hover {
-  border-color: #1d6fa4;
-  box-shadow: 0 0 0 2px rgba(29, 111, 164, 0.25);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-primary) 25%, transparent);
 }
-.device-node.managed  { border-left: 3px solid #0f9960; }
-.device-node.error    { border-left: 3px solid #db3737; }
-.device-node.pending  { border-left: 3px solid #d9822b; }
-.device-node.unregistered { border-left: 3px solid #5c7080; }
+.device-node.managed  { border-left: 3px solid var(--success); }
+.device-node.error    { border-left: 3px solid var(--danger); }
+.device-node.pending  { border-left: 3px solid var(--warning); }
+.device-node.unregistered { border-left: 3px solid var(--text-muted); }
 
 .node-header {
   display: flex;
@@ -63,16 +63,16 @@ const statusClass = computed(() => props.data.status.toLowerCase())
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
-  background: #5c7080;
+  background: var(--text-muted);
 }
-.managed  .status-dot { background: #0f9960; box-shadow: 0 0 6px rgba(15,153,96,0.6); }
-.error    .status-dot { background: #db3737; box-shadow: 0 0 6px rgba(219,55,55,0.6); }
-.pending  .status-dot { background: #d9822b; box-shadow: 0 0 6px rgba(217,130,43,0.5); }
+.managed  .status-dot { background: var(--success); box-shadow: 0 0 6px color-mix(in srgb, var(--success) 60%, transparent); }
+.error    .status-dot { background: var(--danger);  box-shadow: 0 0 6px color-mix(in srgb, var(--danger) 60%, transparent); }
+.pending  .status-dot { background: var(--warning); box-shadow: 0 0 6px color-mix(in srgb, var(--warning) 50%, transparent); }
 
 .node-name {
   font-size: 0.84rem;
   font-weight: 700;
-  color: #d4dbe4;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -80,7 +80,7 @@ const statusClass = computed(() => props.data.status.toLowerCase())
 }
 .node-ip {
   font-size: 0.72rem;
-  color: #6a8099;
+  color: var(--text-muted);
   margin-bottom: 7px;
   padding-left: 15px;
   font-family: 'Consolas', 'Monaco', monospace;
@@ -94,9 +94,9 @@ const statusClass = computed(() => props.data.status.toLowerCase())
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-.badge.proto       { background: #0d2a45; color: #5aabdb; }
-.badge.managed     { background: #092b1f; color: #0f9960; }
-.badge.error       { background: #2e0a0a; color: #db3737; }
-.badge.pending     { background: #2e1a06; color: #d9822b; }
-.badge.unregistered { background: #12202a; color: #5c7080; }
+.badge.proto       { background: var(--accent-active-bg); color: var(--accent-hover); }
+.badge.managed     { background: rgba(0,168,84,0.15); color: var(--success); }
+.badge.error       { background: var(--danger-bg); color: var(--danger); }
+.badge.pending     { background: rgba(217,130,43,0.15); color: var(--warning); }
+.badge.unregistered { background: var(--bg-elevated); color: var(--text-muted); }
 </style>

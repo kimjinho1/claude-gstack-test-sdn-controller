@@ -176,20 +176,37 @@ async function handleSubmit() {
 </script>
 
 <style scoped>
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 300; }
-.modal { background: white; border-radius: 10px; padding: 1.75rem; width: 560px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
-h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 300; }
+.modal {
+  background: var(--bg-modal); border: 1px solid var(--border-subtle);
+  border-radius: 10px; padding: 1.75rem; width: 560px; max-height: 90vh;
+  overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+}
+h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem; color: var(--text-primary); }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; }
 .field { display: flex; flex-direction: column; gap: 0.3rem; }
-.field label { font-size: 0.82rem; font-weight: 500; color: #4a5568; }
-.field input, .field select { padding: 0.5rem 0.7rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.9rem; outline: none; }
-.field input:focus, .field select:focus { border-color: #4299e1; }
-.section-title { font-size: 0.85rem; font-weight: 600; color: #4a5568; margin: 1rem 0 0.5rem; border-top: 1px solid #f0f4f8; padding-top: 0.75rem; }
-.note { font-weight: 400; color: #e53e3e; font-size: 0.78rem; }
-.error { color: #e53e3e; font-size: 0.85rem; margin-top: 0.75rem; }
+.field label { font-size: 0.82rem; font-weight: 500; color: var(--text-secondary); }
+.field input, .field select {
+  padding: 0.5rem 0.7rem; border: 1px solid var(--border-input); border-radius: 6px;
+  font-size: 0.9rem; outline: none; background: var(--bg-input); color: var(--text-primary);
+}
+.field input:focus, .field select:focus { border-color: var(--accent-primary); }
+.section-title {
+  font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);
+  margin: 1rem 0 0.5rem; border-top: 1px solid var(--border-subtle); padding-top: 0.75rem;
+}
+.note { font-weight: 400; color: var(--danger); font-size: 0.78rem; }
+.error { color: var(--danger); font-size: 0.85rem; margin-top: 0.75rem; }
 .modal-actions { display: flex; gap: 0.5rem; margin-top: 1.25rem; justify-content: flex-end; }
-.modal-actions button { padding: 0.5rem 1.25rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; background: #4299e1; color: white; font-weight: 500; }
-.modal-actions button:disabled { background: #a0aec0; cursor: not-allowed; }
-.modal-actions button.cancel { background: #e2e8f0; color: #4a5568; }
+.modal-actions button {
+  padding: 0.5rem 1.25rem; border: none; border-radius: 6px; cursor: pointer;
+  font-size: 0.9rem; background: var(--accent-primary); color: white; font-weight: 500;
+}
+.modal-actions button:disabled { opacity: 0.5; cursor: not-allowed; }
+.modal-actions button.cancel {
+  background: var(--bg-elevated); color: var(--text-secondary);
+  border: 1px solid var(--border-input);
+}
+.modal-actions button.cancel:hover { background: var(--bg-table-hover); color: var(--text-primary); }
 </style>

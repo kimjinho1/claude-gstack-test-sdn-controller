@@ -64,17 +64,29 @@ async function handleChange() {
 </script>
 
 <style scoped>
-.login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #1a202c; }
-.login-card { background: white; border-radius: 12px; padding: 2.5rem; width: 380px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
-h1 { font-size: 1.4rem; font-weight: 700; color: #1a202c; }
-.subtitle { color: #718096; margin-top: 0.25rem; margin-bottom: 2rem; font-size: 0.85rem; }
+.login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg-base); }
+.login-card {
+  background: var(--bg-surface); border: 1px solid var(--border-color);
+  border-radius: 12px; padding: 2.5rem; width: 380px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+h1 { font-size: 1.4rem; font-weight: 700; color: var(--accent-hover); }
+.subtitle { color: var(--text-muted); margin-top: 0.25rem; margin-bottom: 2rem; font-size: 0.85rem; }
 .field { margin-bottom: 1rem; }
-.field label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.4rem; color: #4a5568; }
-.field input { width: 100%; padding: 0.6rem 0.8rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.95rem; outline: none; }
-.field input:focus { border-color: #4299e1; }
-.error { color: #e53e3e; font-size: 0.85rem; margin-bottom: 1rem; }
-.success { color: #38a169; font-size: 0.85rem; margin-bottom: 1rem; }
-button { width: 100%; padding: 0.7rem; background: #4299e1; color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: 500; cursor: pointer; }
-button:hover:not(:disabled) { background: #3182ce; }
-button:disabled { background: #a0aec0; cursor: not-allowed; }
+.field label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.4rem; color: var(--text-secondary); }
+.field input {
+  width: 100%; padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border-input); border-radius: 6px; font-size: 0.95rem; outline: none;
+  background: var(--bg-input); color: var(--text-primary);
+}
+.field input:focus { border-color: var(--accent-primary); }
+.error { color: var(--danger); font-size: 0.85rem; margin-bottom: 1rem; }
+.success { color: var(--success); font-size: 0.85rem; margin-bottom: 1rem; }
+button {
+  width: 100%; padding: 0.7rem; background: var(--accent-primary); color: white;
+  border: none; border-radius: 6px; font-size: 1rem; font-weight: 500;
+  cursor: pointer; transition: opacity 0.2s;
+}
+button:hover:not(:disabled) { opacity: 0.9; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

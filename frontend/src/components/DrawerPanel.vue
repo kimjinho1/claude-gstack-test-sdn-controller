@@ -31,29 +31,29 @@ defineEmits<{ (e: "update:modelValue", v: boolean): void }>();
 }
 .drawer {
   position: fixed; top: 0; right: 0; height: 100vh; width: 480px;
-  background: #131f2b; z-index: 401;
+  background: var(--bg-modal); z-index: 401;
   display: flex; flex-direction: column;
-  box-shadow: -6px 0 40px rgba(0,0,0,0.5);
-  border-left: 1px solid #1e2d3a;
+  box-shadow: -6px 0 40px rgba(0,0,0,0.4);
+  border-left: 1px solid var(--border-subtle);
 }
 .drawer-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 1rem 1.25rem; border-bottom: 1px solid #1e2d3a; flex-shrink: 0;
+  padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-subtle); flex-shrink: 0;
 }
 .drawer-header h3 {
-  font-size: 0.88rem; font-weight: 700; margin: 0; color: #d4dbe4;
+  font-size: 0.88rem; font-weight: 700; margin: 0; color: var(--text-primary);
   text-transform: uppercase; letter-spacing: 0.06em;
 }
 .close-btn {
   background: none; border: none; cursor: pointer; font-size: 1rem;
-  color: #5c7080; padding: 0.2rem 0.5rem; border-radius: 3px; line-height: 1; transition: all 0.12s;
+  color: var(--text-muted); padding: 0.2rem 0.5rem; border-radius: 3px; line-height: 1; transition: all 0.12s;
 }
-.close-btn:hover { background: #1a2a3a; color: #d4dbe4; }
+.close-btn:hover { background: var(--bg-elevated); color: var(--text-primary); }
 .drawer-body { flex: 1; overflow-y: auto; padding: 1.25rem; }
 .drawer-footer {
-  padding: 0.85rem 1.25rem; border-top: 1px solid #1e2d3a;
+  padding: 0.85rem 1.25rem; border-top: 1px solid var(--border-subtle);
   display: flex; gap: 0.5rem; justify-content: flex-end; flex-shrink: 0;
-  background: #0e1720;
+  background: var(--bg-elevated);
 }
 
 /* Transitions */
