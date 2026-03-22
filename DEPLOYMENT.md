@@ -96,7 +96,9 @@ git push origin main
 
 `main` 브랜치에 push하면 자동으로:
 1. Vitest 테스트 실행
-2. 테스트 통과 시 Backend/Frontend 병렬 배포
+2. 테스트 통과 시 Backend 배포 (alembic upgrade head → uvicorn 기동)
+3. Backend 배포 성공 시 Frontend 배포 (Vercel)
+   - Backend 실패 시 Frontend 배포는 건너뜀 (broken API 방지)
 
 ---
 
