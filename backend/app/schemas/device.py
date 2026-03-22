@@ -73,7 +73,17 @@ class DeviceCreate(BaseModel):
 
 class DeviceUpdate(BaseModel):
     name: str | None = None
+    ip_addr: str | None = None
     floor: int | None = None
+
+    @field_validator("ip_addr")
+    @classmethod
+    def validate_ip(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        if not _IP_RE.match(v):
+            raise ValueError("ip_addr must be a valid IPv4 address (e.g. 10.0.1.1)")
+        return v
     model_id: int | None = None
     ssh_id: str | None = None
     ssh_password: str | None = None
