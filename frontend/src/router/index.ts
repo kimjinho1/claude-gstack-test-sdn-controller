@@ -17,6 +17,7 @@ const router = createRouter({
         { path: "devices", name: "Devices", component: () => import("@/views/DevicesView.vue") },
         { path: "devices/:id", name: "DeviceDetail", component: () => import("@/views/DeviceDetailView.vue") },
         { path: "alarms", name: "Alarms", component: () => import("@/views/AlarmsView.vue") },
+        { path: "controller", name: "Controller", component: () => import("@/views/ControllerSettingsView.vue") },
       ],
     },
     { path: "/:pathMatch(.*)*", redirect: "/topology" },

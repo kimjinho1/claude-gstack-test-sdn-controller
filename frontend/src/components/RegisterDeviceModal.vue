@@ -71,6 +71,17 @@
               <input v-model.number="form.ssh_port" type="number" placeholder="22" />
             </div>
           </div>
+          <div class="grid-3">
+            <div class="field">
+              <label>장비 타입 *</label>
+              <select v-model="form.device_type">
+                <option value="cisco_ios">Cisco IOS</option>
+                <option value="cisco_xe">Cisco IOS-XE</option>
+                <option value="cisco_nxos">Cisco NX-OS</option>
+                <option value="arista_eos">Arista EOS</option>
+              </select>
+            </div>
+          </div>
         </template>
 
         <!-- REST fields -->
@@ -123,6 +134,7 @@ const form = reactive({
   site_id: "" as number | "",
   building_id: "" as number | "",
   floor: undefined as number | undefined,
+  device_type: "cisco_ios",
   ssh_id: "", ssh_password: "", ssh_port: 22,
   rest_id: "", rest_password: "", rest_port: undefined as number | undefined,
 });
@@ -157,6 +169,7 @@ async function handleSubmit() {
       floor: form.floor,
     };
     if (form.protocol === "SSH") {
+      payload.device_type = form.device_type;
       payload.ssh_id = form.ssh_id;
       payload.ssh_password = form.ssh_password;
       payload.ssh_port = form.ssh_port;

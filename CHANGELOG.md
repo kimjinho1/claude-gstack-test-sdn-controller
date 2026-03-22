@@ -2,6 +2,19 @@
 
 All notable changes to the SDN Controller project will be documented in this file.
 
+## [0.1.5.0] - 2026-03-22
+
+### Added
+- **컨트롤러 설정 (Controller Settings)** — new admin-only nav section with two sub-tabs:
+  - **장비 모델 (Device Models)**: catalog of physical/virtual device types with full CRUD. Includes name, vendor, device_type, description, docker_image, and image_url fields. Pre-seeded with Arista cEOS-lab model on startup.
+  - **가상 장비 (Virtual Devices)**: launch and manage Arista cEOS Docker containers for lab testing directly from the UI. Each container maps a configurable SSH port (1024–65535). Status syncs live from Docker on every list fetch.
+- **Alembic migration 0005**: `device_models` and `virtual_devices` tables with proper FK and index on `model_id`.
+- **`arista_eos` SSH driver support**: added to `SSH_DEVICE_TYPES` allowlist and Netmiko device map; regex fallback parser now handles Arista `show version` format alongside Cisco IOS patterns.
+
+### Fixed
+- SSH driver `model` field now falls back to `d.get("model", "")` when NAPALM returns hardware as a non-list — prevents empty model on some Arista responses.
+- Regex fallback parser for SSH driver now captures both Cisco and Arista serial number/model/version patterns.
+
 ## [0.1.4.0] - 2026-03-22
 
 ### Added

@@ -10,8 +10,8 @@ _IP_RE = re.compile(
     r"^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)$"
 )
 
-# Netmiko device types supported in Phase 1 (SSH only)
-SSH_DEVICE_TYPES = {"cisco_ios", "cisco_nxos", "cisco_xe"}
+# Netmiko device types supported (SSH only)
+SSH_DEVICE_TYPES = {"cisco_ios", "cisco_nxos", "cisco_xe", "arista_eos"}
 
 
 class DeviceCreate(BaseModel):
