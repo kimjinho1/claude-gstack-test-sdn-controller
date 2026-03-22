@@ -24,9 +24,9 @@ def upgrade() -> None:
         sa.Column("username", sa.String(64), nullable=False, unique=True),
         sa.Column("password_hash", sa.String(256), nullable=False),
         sa.Column("role", sa.Enum("SUPERADMIN", "ADMIN", "VIEWER", name="userrole"), nullable=False),
-        sa.Column("is_active", sa.Boolean(), nullable=False, default=True),
-        sa.Column("must_change_password", sa.Boolean(), nullable=False, default=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.text("true")),
+        sa.Column("must_change_password", sa.Boolean(), nullable=False, server_default=sa.text("false")),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
     )
 
     # --- groups ---
@@ -35,7 +35,7 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("name", sa.String(128), nullable=False),
         sa.Column("description", sa.Text()),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
     )
 
     # --- sites ---
@@ -45,7 +45,7 @@ def upgrade() -> None:
         sa.Column("group_id", sa.Integer(), sa.ForeignKey("groups.id", ondelete="CASCADE"), nullable=False),
         sa.Column("name", sa.String(128), nullable=False),
         sa.Column("description", sa.Text()),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
     )
     op.create_index("ix_sites_group_id", "sites", ["group_id"])
 
@@ -55,8 +55,8 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("site_id", sa.Integer(), sa.ForeignKey("sites.id", ondelete="CASCADE"), nullable=False),
         sa.Column("name", sa.String(128), nullable=False),
-        sa.Column("floors", sa.Integer(), nullable=False, default=1),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("floors", sa.Integer(), nullable=False, server_default=sa.text("1")),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
     )
     op.create_index("ix_buildings_site_id", "buildings", ["site_id"])
 
@@ -86,7 +86,7 @@ def upgrade() -> None:
         sa.Column("model", sa.String(128)),
         sa.Column("sw_version", sa.String(128)),
         sa.Column("last_polled_at", sa.DateTime(timezone=True)),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
     )
     # Indexes for frequent polling queries
     op.create_index("ix_devices_status", "devices", ["status"])
@@ -147,7 +147,7 @@ def upgrade() -> None:
         sa.Column("message", sa.Text()),
         sa.Column("status", sa.Enum("OPEN", "ACKNOWLEDGED", "RESOLVED", name="alarmstatus"),
                   nullable=False, server_default="OPEN"),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
         sa.Column("resolved_at", sa.DateTime(timezone=True)),
     )
     op.create_index("ix_alarms_device_id", "alarms", ["device_id"])
@@ -161,7 +161,7 @@ def upgrade() -> None:
         sa.Column("user_id", sa.Integer(), sa.ForeignKey("users.id"), nullable=False),
         sa.Column("action_type", sa.String(64), nullable=False),
         sa.Column("note", sa.Text()),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
     )
     op.create_index("ix_alarm_actions_alarm_id", "alarm_actions", ["alarm_id"])
 
@@ -174,7 +174,7 @@ def upgrade() -> None:
         sa.Column("resource_type", sa.String(64)),
         sa.Column("resource_id", sa.Integer()),
         sa.Column("ip_addr", sa.String(45)),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
     )
     op.create_index("ix_audit_logs_user_id", "audit_logs", ["user_id"])
 
