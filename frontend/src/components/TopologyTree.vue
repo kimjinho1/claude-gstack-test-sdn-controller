@@ -90,7 +90,7 @@
     </div>
 
     <!-- Add Group Modal -->
-    <div v-if="showAddGroup" class="modal-overlay" @click.self="showAddGroup = false">
+    <div v-if="showAddGroup" class="modal-overlay">
       <div class="modal">
         <h3>그룹 추가</h3>
         <input v-model="newName" placeholder="그룹 이름" @keyup.enter="createGroup" />
@@ -102,7 +102,7 @@
     </div>
 
     <!-- Add Site Modal -->
-    <div v-if="addSiteTarget" class="modal-overlay" @click.self="addSiteTarget = null">
+    <div v-if="addSiteTarget" class="modal-overlay">
       <div class="modal">
         <h3>사이트 추가 — {{ addSiteTarget.name }}</h3>
         <input v-model="newName" placeholder="사이트 이름" @keyup.enter="createSite" />
@@ -114,7 +114,7 @@
     </div>
 
     <!-- Add Building Modal -->
-    <div v-if="addBuildingTarget" class="modal-overlay" @click.self="addBuildingTarget = null">
+    <div v-if="addBuildingTarget" class="modal-overlay">
       <div class="modal">
         <h3>건물 추가 — {{ addBuildingTarget.site.name }}</h3>
         <input v-model="newName" placeholder="건물 이름" />

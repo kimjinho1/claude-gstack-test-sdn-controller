@@ -3,58 +3,59 @@
     <!-- Switch chassis -->
     <div class="switch-chassis">
       <div class="chassis-label">{{ label }}</div>
-      <div class="ports-grid">
+      <div class="ports-grid" @mouseleave="hovered = null">
         <div
-          v-for="port in ports"
+          v-for="(port, idx) in ports"
           :key="port.id"
           class="port-box"
           :class="portClass(port)"
-          @mouseenter="hovered = port"
-          @mouseleave="hovered = null"
+          @mouseenter="onPortEnter(port, $event)"
         >
           <div class="port-led"></div>
           <div class="port-name">{{ shortName(port.port_name) }}</div>
-
-          <!-- Tooltip -->
-          <div v-if="hovered?.id === port.id" class="port-tooltip">
-            <div class="tooltip-header">
-              <span class="tooltip-portname">{{ port.port_name }}</span>
-              <span class="tooltip-badge" :class="port.port_status === 'UP' ? 'badge-up' : 'badge-down'">
-                {{ port.port_status }}
-              </span>
-            </div>
-            <div class="tooltip-row" v-if="port.description">
-              <span class="tl">설명</span><span class="tv">{{ port.description }}</span>
-            </div>
-            <div class="tooltip-row">
-              <span class="tl">Admin</span>
-              <span class="tv" :class="port.admin_status === 'down' ? 'txt-red' : 'txt-green'">
-                {{ port.admin_status === 'down' ? 'shutdown' : 'no shutdown' }}
-              </span>
-            </div>
-            <div class="tooltip-row" v-if="port.port_type">
-              <span class="tl">타입</span><span class="tv">{{ port.port_type }}</span>
-            </div>
-            <div class="tooltip-row" v-if="port.speed || port.duplex">
-              <span class="tl">속도</span>
-              <span class="tv">{{ [port.speed, port.duplex].filter(Boolean).join(' / ') }}</span>
-            </div>
-            <div class="tooltip-row" v-if="port.vlan_mode">
-              <span class="tl">VLAN</span>
-              <span class="tv">
-                {{ port.vlan_mode === 'access' ? `Access ${port.vlan_id || ''}` : `Trunk (native: ${port.pvid || '—'})` }}
-              </span>
-            </div>
-            <div class="tooltip-divider" v-if="port.traffic_in_bps !== null || port.traffic_out_bps !== null"></div>
-            <div class="tooltip-row" v-if="port.traffic_in_bps !== null">
-              <span class="tl">수신</span><span class="tv txt-green">↓ {{ formatBps(port.traffic_in_bps) }}</span>
-            </div>
-            <div class="tooltip-row" v-if="port.traffic_out_bps !== null">
-              <span class="tl">송신</span><span class="tv txt-blue">↑ {{ formatBps(port.traffic_out_bps) }}</span>
-            </div>
-          </div>
         </div>
       </div>
+
+      <!-- Tooltip rendered in <body> via Teleport — escapes all overflow/stacking contexts -->
+      <Teleport to="body">
+        <div v-if="hovered" class="port-tooltip-global" :style="tooltipStyle">
+          <div class="tooltip-header">
+            <span class="tooltip-portname">{{ hovered.port_name }}</span>
+            <span class="tooltip-badge" :class="hovered.port_status === 'UP' ? 'badge-up' : 'badge-down'">
+              {{ hovered.port_status }}
+            </span>
+          </div>
+          <div class="tooltip-row" v-if="hovered.description">
+            <span class="tl">설명</span><span class="tv">{{ hovered.description }}</span>
+          </div>
+          <div class="tooltip-row">
+            <span class="tl">Admin</span>
+            <span class="tv" :class="hovered.admin_status === 'down' ? 'txt-red' : 'txt-green'">
+              {{ hovered.admin_status === 'down' ? 'shutdown' : 'no shutdown' }}
+            </span>
+          </div>
+          <div class="tooltip-row" v-if="hovered.port_type">
+            <span class="tl">타입</span><span class="tv">{{ hovered.port_type }}</span>
+          </div>
+          <div class="tooltip-row" v-if="hovered.speed || hovered.duplex">
+            <span class="tl">속도</span>
+            <span class="tv">{{ [hovered.speed, hovered.duplex].filter(Boolean).join(' / ') }}</span>
+          </div>
+          <div class="tooltip-row" v-if="hovered.vlan_mode">
+            <span class="tl">VLAN</span>
+            <span class="tv">
+              {{ hovered.vlan_mode === 'access' ? `Access ${hovered.vlan_id || ''}` : `Trunk (native: ${hovered.pvid || '—'})` }}
+            </span>
+          </div>
+          <div class="tooltip-divider" v-if="hovered.traffic_in_bps !== null || hovered.traffic_out_bps !== null"></div>
+          <div class="tooltip-row" v-if="hovered.traffic_in_bps !== null">
+            <span class="tl">수신</span><span class="tv txt-green">↓ {{ formatBps(hovered.traffic_in_bps) }}</span>
+          </div>
+          <div class="tooltip-row" v-if="hovered.traffic_out_bps !== null">
+            <span class="tl">송신</span><span class="tv txt-blue">↑ {{ formatBps(hovered.traffic_out_bps) }}</span>
+          </div>
+        </div>
+      </Teleport>
     </div>
 
     <!-- Legend -->
@@ -64,8 +65,8 @@
       <span class="legend-item"><span class="led-sample led-shutdown"></span>Shutdown</span>
     </div>
 
-    <!-- Port list table -->
-    <table class="port-table">
+    <!-- Port list table (hidden in compact mode) -->
+    <table v-if="!compact" class="port-table">
       <thead>
         <tr>
           <th>포트</th>
@@ -83,7 +84,7 @@
         <tr v-if="ports.length === 0">
           <td colspan="9" class="empty">포트 정보 없음</td>
         </tr>
-        <tr v-for="p in ports" :key="p.id" :class="{ 'row-down': p.port_status === 'DOWN' && p.admin_status !== 'down' }">
+        <tr v-for="p in ports" :key="p.port_name" :class="{ 'row-down': p.port_status === 'DOWN' && p.admin_status !== 'down' }">
           <td class="mono">{{ p.port_name }}</td>
           <td>
             <span class="badge" :class="p.port_status === 'UP' ? 'badge-up' : 'badge-down'">
@@ -116,9 +117,33 @@ import { ref } from "vue";
 const props = defineProps<{
   ports: any[];
   label?: string;
+  compact?: boolean;
 }>();
 
 const hovered = ref<any>(null);
+const tooltipStyle = ref<Record<string, string>>({});
+
+const TOOLTIP_W = 220;
+const GAP = 8;
+
+function onPortEnter(port: any, e: MouseEvent) {
+  hovered.value = port;
+  const el = e.currentTarget as HTMLElement;
+  const rect = el.getBoundingClientRect();
+
+  // Center on port, clamped to viewport edges
+  let left = rect.left + rect.width / 2 - TOOLTIP_W / 2;
+  left = Math.max(GAP, Math.min(window.innerWidth - TOOLTIP_W - GAP, left));
+
+  // position: fixed via Teleport escapes all parent overflow/clip/stacking contexts
+  tooltipStyle.value = {
+    position: 'fixed',
+    left: `${left}px`,
+    bottom: `${window.innerHeight - rect.top + GAP}px`,
+    top: 'auto',
+    transform: 'none',
+  };
+}
 
 function portClass(port: any) {
   if (port.admin_status === "down") return "port-shutdown";
@@ -166,7 +191,7 @@ function formatBps(bps: number | null | undefined): string {
   flex-direction: column;
   gap: 0.6rem;
 }
-.chassis-label { font-size: 0.75rem; color: #6b7280; font-family: monospace; }
+.chassis-label { font-size: 0.82rem; color: #6b7280; font-family: monospace; }
 .ports-grid {
   display: flex;
   flex-wrap: wrap;
@@ -175,8 +200,8 @@ function formatBps(bps: number | null | undefined): string {
 
 /* Port box */
 .port-box {
-  width: 44px;
-  height: 44px;
+  width: 52px;
+  height: 52px;
   border-radius: 4px;
   display: flex;
   flex-direction: column;
@@ -203,31 +228,23 @@ function formatBps(bps: number | null | undefined): string {
 .port-down .port-led { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
 .port-shutdown .port-led { background: #4b5563; }
 
-.port-name { font-size: 0.6rem; color: #d1d5db; font-family: monospace; line-height: 1; }
+.port-name { font-size: 0.7rem; color: #d1d5db; font-family: monospace; line-height: 1; }
 
-/* Tooltip */
+/* Tooltip — position: fixed is set via JS to escape parent overflow clipping */
 .port-tooltip {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
+  position: fixed;
   background: #111827;
   border: 1px solid #374151;
   border-radius: 8px;
   padding: 0.6rem 0.75rem;
   min-width: 200px;
-  z-index: 100;
+  z-index: 9999;
   box-shadow: 0 8px 24px rgba(0,0,0,0.6);
   white-space: nowrap;
+  pointer-events: none;
 }
 .port-tooltip::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 6px solid transparent;
-  border-top-color: #374151;
+  content: none; /* arrow removed — fixed positioning makes alignment unreliable */
 }
 .tooltip-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
 .tooltip-portname { font-size: 0.85rem; font-weight: 600; color: #f3f4f6; font-family: monospace; }
@@ -275,4 +292,32 @@ function formatBps(bps: number | null | undefined): string {
 
 .badge { font-size: 0.72rem; font-weight: 600; padding: 2px 7px; border-radius: 4px; }
 .badge-shutdown { background: rgba(107,114,128,0.15); color: #9ca3af; }
+</style>
+
+<!-- Global style for Teleport tooltip — not scoped because it renders in <body> -->
+<style>
+.port-tooltip-global {
+  position: fixed;
+  background: #111827;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  min-width: 200px;
+  z-index: 9999;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.port-tooltip-global .tooltip-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+.port-tooltip-global .tooltip-portname { font-size: 0.85rem; font-weight: 600; color: #f3f4f6; font-family: monospace; }
+.port-tooltip-global .tooltip-badge { font-size: 0.7rem; font-weight: 600; padding: 2px 6px; border-radius: 4px; }
+.port-tooltip-global .badge-up { background: rgba(34,197,94,0.2); color: #22c55e; }
+.port-tooltip-global .badge-down { background: rgba(239,68,68,0.2); color: #ef4444; }
+.port-tooltip-global .tooltip-row { display: flex; gap: 0.5rem; align-items: baseline; font-size: 0.78rem; line-height: 1.6; }
+.port-tooltip-global .tl { color: #6b7280; min-width: 40px; flex-shrink: 0; }
+.port-tooltip-global .tv { color: #d1d5db; }
+.port-tooltip-global .txt-green { color: #22c55e; }
+.port-tooltip-global .txt-red { color: #ef4444; }
+.port-tooltip-global .txt-blue { color: #60a5fa; }
+.port-tooltip-global .tooltip-divider { border-top: 1px solid #374151; margin: 0.4rem 0; }
 </style>

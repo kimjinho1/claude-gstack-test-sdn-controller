@@ -1,3 +1,4 @@
+import asyncio
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -6,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import audit, get_current_user, require_admin
+from app.protocols.ssh.ssh_driver import get_ssh_driver
 from app.tasks.device_poll import poll_device_task
 from app.core.database import get_db
 from app.core.security import decrypt_credential, encrypt_credential
@@ -190,6 +192,62 @@ async def get_vlans(
 
     vlans = await db.execute(select(Vlan).where(Vlan.device_id == device_id))
     return vlans.scalars().all()
+
+
+@router.post("/{device_id}/running-config")
+async def fetch_running_config(
+    device_id: int,
+    _: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    result = await db.execute(select(Device).where(Device.id == device_id))
+    device = result.scalar_one_or_none()
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+    _require_managed(device)
+    if device.protocol != DeviceProtocol.SSH:
+        raise HTTPException(status_code=400, detail="Running config은 SSH 장비만 지원합니다")
+
+    ip = device.ip_addr
+    ssh_id = device.ssh_id
+    password = decrypt_credential(device.ssh_password_encrypted)
+    port = device.ssh_port or 22
+    device_type = device.device_type or "cisco_ios"
+
+    def _fetch():
+        driver = get_ssh_driver(ip=ip, username=ssh_id, password=password, port=port, device_type=device_type)
+        try:
+            return driver.get_running_config()
+        finally:
+            driver.close()
+
+    try:
+        config = await asyncio.to_thread(_fetch)
+    except RuntimeError as e:
+        msg = str(e)
+        # "not supported" → 501, device rejected command → 422, else → 502
+        if "지원되지 않습니다" in msg:
+            raise HTTPException(status_code=501, detail=msg)
+        if "명령어를 거부" in msg:
+            raise HTTPException(status_code=422, detail=msg)
+        raise HTTPException(status_code=502, detail=msg)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"SSH 연결 실패: {e}")
+    return {"config": config}
+
+
+@router.post("/{device_id}/poll")
+async def trigger_poll(
+    device_id: int,
+    _: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    result = await db.execute(select(Device).where(Device.id == device_id))
+    device = result.scalar_one_or_none()
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+    poll_device_task.delay(device_id)
+    return {"queued": True}
 
 
 @router.get("/{device_id}/endpoints", response_model=list[EndpointResponse])

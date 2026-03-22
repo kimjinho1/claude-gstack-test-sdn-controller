@@ -1,10 +1,13 @@
 <template>
   <Teleport to="body">
     <Transition name="drawer-bg">
-      <div v-if="modelValue" class="drawer-backdrop" @click.self="$emit('update:modelValue', false)" />
+      <div v-if="modelValue" class="drawer-backdrop" />
     </Transition>
     <Transition name="drawer-slide">
-      <div v-if="modelValue" class="drawer" :style="{ width: width + 'px' }">
+      <div v-if="modelValue" class="drawer" :style="{ width: drawerWidth + 'px' }">
+        <!-- Resize handle on left edge -->
+        <div class="resize-handle" @mousedown="startResize" />
+
         <div class="drawer-header">
           <h3>{{ title }}</h3>
           <button class="close-btn" @click="$emit('update:modelValue', false)">✕</button>
@@ -21,8 +24,42 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{ modelValue: boolean; title: string; width?: number }>();
+import { ref, watch } from "vue";
+
+const props = defineProps<{ modelValue: boolean; title: string; width?: number }>();
 defineEmits<{ (e: "update:modelValue", v: boolean): void }>();
+
+const MIN_WIDTH = 380;
+const MAX_WIDTH = 1200;
+const drawerWidth = ref(props.width ?? 480);
+
+watch(() => props.width, (v) => { if (v) drawerWidth.value = v; });
+
+let startX = 0;
+let startWidth = 0;
+
+function startResize(e: MouseEvent) {
+  e.preventDefault();
+  startX = e.clientX;
+  startWidth = drawerWidth.value;
+  document.addEventListener("mousemove", onMouseMove);
+  document.addEventListener("mouseup", stopResize);
+  document.body.style.cursor = "ew-resize";
+  document.body.style.userSelect = "none";
+}
+
+function onMouseMove(e: MouseEvent) {
+  const delta = startX - e.clientX; // drag left → delta positive → increase width
+  const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth + delta));
+  drawerWidth.value = newWidth;
+}
+
+function stopResize() {
+  document.removeEventListener("mousemove", onMouseMove);
+  document.removeEventListener("mouseup", stopResize);
+  document.body.style.cursor = "";
+  document.body.style.userSelect = "";
+}
 </script>
 
 <style scoped>
@@ -30,12 +67,34 @@ defineEmits<{ (e: "update:modelValue", v: boolean): void }>();
   position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 400;
 }
 .drawer {
-  position: fixed; top: 0; right: 0; height: 100vh; width: 480px;
+  position: fixed; top: 0; right: 0; height: 100vh;
   background: var(--bg-modal); z-index: 401;
   display: flex; flex-direction: column;
   box-shadow: -6px 0 40px rgba(0,0,0,0.4);
   border-left: 1px solid var(--border-subtle);
 }
+
+/* Resize handle — 8px grab zone on the left edge */
+.resize-handle {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 8px;
+  cursor: ew-resize;
+  z-index: 10;
+}
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  left: 2px; top: 50%;
+  transform: translateY(-50%);
+  width: 3px; height: 40px;
+  border-radius: 2px;
+  background: var(--border-subtle);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.resize-handle:hover::after { opacity: 1; }
+
 .drawer-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-subtle); flex-shrink: 0;

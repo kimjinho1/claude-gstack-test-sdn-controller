@@ -71,7 +71,7 @@
 
     <!-- Add link modal -->
     <Transition name="fade">
-      <div v-if="showAddLink" class="modal-overlay" @click.self="closeAddLink">
+      <div v-if="showAddLink" class="modal-overlay">
         <div class="modal-dark">
           <div class="modal-hd">
             <h3>링크 추가</h3>
