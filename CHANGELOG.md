@@ -2,6 +2,32 @@
 
 All notable changes to the SDN Controller project will be documented in this file.
 
+## [0.1.9.0] - 2026-03-23
+
+### Added
+- **CI/CD 파이프라인** — GitHub Actions로 main 브랜치 push 시 Fly.io 백엔드(alembic 마이그레이션 포함)와 Vercel 프론트엔드를 자동 배포합니다. 프론트엔드는 백엔드 배포 성공 후에만 배포됩니다.
+- **네트워크 토폴로지 뷰** — VueFlow 기반 인터랙티브 토폴로지 캔버스. dagre 자동 레이아웃, 링크 추가/삭제, 엣지 드래그 연결, 미니맵, 컨트롤 패널을 포함합니다.
+- **관제 뷰 (`/monitoring`)** — 장비 목록 + 실시간 상태 모니터링. 설정 드로어와 관제 드로어가 분리됩니다.
+- **컨트롤러 설정 뷰** — 장비 모델 CRUD 및 가상 장비(Docker 컨테이너) 실행/중지/삭제.
+- **포트 트래픽 시각화** — `SwitchPortMap` 컴포넌트: 포트별 admin/link 상태, traffic_in/out bps, VLAN 정보 표시.
+- **VLAN 맵** — `VlanMap` 컴포넌트: 장비별 VLAN 구성 카드.
+- **다크/라이트 테마 토글** — CSS 변수 기반 테마 시스템. localStorage에 선택값 저장.
+- **테스트 프레임워크 (vitest)** — `formatBps`, `shortName`, `themeStore` 유닛 테스트 추가.
+- **Alembic 마이그레이션** — `device_links`, `device_models`, `virtual_devices`, 포트 트래픽 컬럼, `container_ip`, SSH 포트 유니크 인덱스(0004–0007).
+- **Mock cEOS 컨테이너** — 로컬 개발용 Arista cEOS 시뮬레이터 Docker 이미지.
+
+### Changed
+- **토폴로지 링크 생성 시 사이클 감지** — BFS로 역방향 경로 확인 후 순환 링크를 400 에러로 거부합니다.
+- **가상 장비 Docker 상태 동기화** — 순차 inspect에서 `asyncio.gather` 병렬 inspect로 변경하여 응답 지연 개선.
+- **SSH 드라이버** — Arista EOS, Cisco IOS/NX-OS 다중 벤더 지원. 포트 트래픽·VLAN 상세 정보 수집.
+
+### Fixed
+- **vue-tsc 빌드 에러 수정** — `import.meta.env`, `NodeTypesObject`, `node-border-radius`, 타입 추론 깊이 초과 등 TypeScript 오류 5건 수정. Vercel 빌드 성공.
+- **토폴로지 오류 처리** — `loadTopology` API 실패 시 에러 배너 표시. `onConnect` 드래그 연결 실패 시 `topologyError` 설정.
+- **`createUser` 반환값** — 신규 사용자 생성 후 `id`를 반환하도록 수정.
+- **flyctl-actions 버전 고정** — CI에서 `@master` 대신 `@v1`으로 고정하여 공급망 보안 강화.
+- **가상 장비 SSH 포트 레이스 컨디션** — 활성 상태 필터링 부분 유니크 인덱스(`uq_virtual_devices_ssh_port_active`) 추가.
+
 ## [0.1.8.1] - 2026-03-23
 
 ### Fixed
