@@ -2,6 +2,11 @@
 
 All notable changes to the SDN Controller project will be documented in this file.
 
+## [0.1.8.1] - 2026-03-23
+
+### Fixed
+- **관제 드로어 기본정보 인라인 레이아웃** — 기본정보 탭의 장비 정보 표시 형식이 `라벨: 값` 인라인 형식으로 개선됩니다. MAC 주소가 IP 주소보다 먼저 표시됩니다.
+
 ## [0.1.8.0] - 2026-03-23
 
 ### Added
