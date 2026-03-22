@@ -267,6 +267,7 @@ const polling = ref(false);
 
 const portExpanded = ref(true);
 const vlanExpanded = ref(true);
+const monitorGeneration = ref(0);
 
 const tabs = [
   { key: "info", label: "기본정보" },
@@ -320,17 +321,27 @@ function parseUptime(raw: string | null | undefined): string {
 async function loadPorts() {
   const id = selectedDevice.value?.id;
   if (!id) return;
+  const gen = monitorGeneration.value;
   loadingPorts.value = true;
-  try { ports.value = (await api.get(`/devices/${id}/ports`)).data; }
-  finally { loadingPorts.value = false; }
+  try {
+    const data = (await api.get(`/devices/${id}/ports`)).data;
+    if (monitorGeneration.value === gen) ports.value = data;
+  } finally {
+    if (monitorGeneration.value === gen) loadingPorts.value = false;
+  }
 }
 
 async function loadVlans() {
   const id = selectedDevice.value?.id;
   if (!id) return;
+  const gen = monitorGeneration.value;
   loadingVlans.value = true;
-  try { vlans.value = (await api.get(`/devices/${id}/vlans`)).data; }
-  finally { loadingVlans.value = false; }
+  try {
+    const data = (await api.get(`/devices/${id}/vlans`)).data;
+    if (monitorGeneration.value === gen) vlans.value = data;
+  } finally {
+    if (monitorGeneration.value === gen) loadingVlans.value = false;
+  }
 }
 
 async function loadEndpoints() {
@@ -375,6 +386,7 @@ async function fetchRunningConfig() {
 }
 
 async function openMonitor(device: any) {
+  monitorGeneration.value++;
   selectedDevice.value = device;
   drawerOpen.value = true;
   activeTab.value = "info";

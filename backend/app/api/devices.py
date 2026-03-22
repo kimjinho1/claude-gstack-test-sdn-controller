@@ -1,7 +1,16 @@
 import asyncio
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+
+logger = logging.getLogger(__name__)
+
+# Allowed Netmiko device_type values — prevents injecting arbitrary driver names from DB
+_ALLOWED_DEVICE_TYPES = frozenset({
+    "cisco_ios", "cisco_nxos", "cisco_xe", "cisco_xr",
+    "arista_eos", "hp_procurve", "huawei_vrp", "juniper",
+})
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -213,6 +222,8 @@ async def fetch_running_config(
     password = decrypt_credential(device.ssh_password_encrypted)
     port = device.ssh_port or 22
     device_type = device.device_type or "cisco_ios"
+    if device_type not in _ALLOWED_DEVICE_TYPES:
+        raise HTTPException(status_code=400, detail=f"지원하지 않는 device_type: {device_type}")
 
     def _fetch():
         driver = get_ssh_driver(ip=ip, username=ssh_id, password=password, port=port, device_type=device_type)
@@ -230,16 +241,18 @@ async def fetch_running_config(
             raise HTTPException(status_code=501, detail=msg)
         if "명령어를 거부" in msg:
             raise HTTPException(status_code=422, detail=msg)
-        raise HTTPException(status_code=502, detail=msg)
+        logger.error("running-config RuntimeError device_id=%s: %s", device_id, msg)
+        raise HTTPException(status_code=502, detail="장비 통신 오류가 발생했습니다.")
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"SSH 연결 실패: {e}")
+        logger.error("running-config SSH error device_id=%s: %s", device_id, e)
+        raise HTTPException(status_code=502, detail="SSH 연결에 실패했습니다.")
     return {"config": config}
 
 
 @router.post("/{device_id}/poll")
 async def trigger_poll(
     device_id: int,
-    _: Annotated[User, Depends(get_current_user)],
+    _: Annotated[User, Depends(require_admin)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     result = await db.execute(select(Device).where(Device.id == device_id))
