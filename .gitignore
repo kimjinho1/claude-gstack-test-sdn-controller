@@ -1,0 +1,31 @@
+# Environment secrets — never commit
+.env
+.env.local
+.env.production
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+.pytest_cache/
+*.pyc
+
+# Node / Frontend
+node_modules/
+dist/
+.vite/
+
+# IDE and tooling
+.claude/
+.omc/
+.DS_Store
+*.swp
+*.swo
+
+# Docker volumes
+postgres_data/
+redis_data/
