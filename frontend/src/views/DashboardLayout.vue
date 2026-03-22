@@ -31,17 +31,20 @@
             <RouterLink to="/topology" class="nav-item" :class="{ active: route.path === '/topology' }">
               <span class="nav-icon">⬡</span> <span class="nav-label">토폴로지</span>
             </RouterLink>
+            <RouterLink v-if="auth.isAdmin" to="/users" class="nav-item" :class="{ active: route.path === '/users' }">
+              <span class="nav-icon">◉</span> <span class="nav-label">사용자 관리</span>
+            </RouterLink>
+            <RouterLink v-if="auth.isAdmin" to="/groups-manage" class="nav-item" :class="{ active: route.path === '/groups-manage' }">
+              <span class="nav-icon">◫</span> <span class="nav-label">그룹 관리</span>
+            </RouterLink>
             <RouterLink to="/devices" class="nav-item" :class="{ active: route.path.startsWith('/devices') }">
               <span class="nav-icon">⊞</span> <span class="nav-label">장비 관리</span>
             </RouterLink>
             <RouterLink to="/alarms" class="nav-item" :class="{ active: route.path === '/alarms' }">
               <span class="nav-icon">🔔</span> <span class="nav-label">알람</span>
             </RouterLink>
-            <RouterLink v-if="auth.isAdmin" to="/groups-manage" class="nav-item" :class="{ active: route.path === '/groups-manage' }">
-              <span class="nav-icon">◫</span> <span class="nav-label">그룹 관리</span>
-            </RouterLink>
-            <RouterLink v-if="auth.isAdmin" to="/users" class="nav-item" :class="{ active: route.path === '/users' }">
-              <span class="nav-icon">◉</span> <span class="nav-label">사용자 관리</span>
+            <RouterLink v-if="auth.isAdmin" to="/controller" class="nav-item" :class="{ active: route.path.startsWith('/controller') }">
+              <span class="nav-icon">⚙️</span> <span class="nav-label">컨트롤러 설정</span>
             </RouterLink>
           </nav>
         </aside>
