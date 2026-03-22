@@ -2,6 +2,30 @@
 
 All notable changes to the SDN Controller project will be documented in this file.
 
+## [0.1.1.0] - 2026-03-22
+
+### Added
+- User management API (`/users` CRUD) with role hierarchy enforcement — actors can only manage users with strictly lower role level (SUPERADMIN > ADMIN > USER > GUEST)
+- `UserRole.USER` and `UserRole.GUEST` roles replacing the former `VIEWER` role; `level()` method enables programmatic role comparison
+- Alembic migration 0002: adds `USER` and `GUEST` values to the `userrole` PostgreSQL enum
+- Sidebar navigation tabs in `DashboardLayout`: 사용자 관리 (admin-only), 그룹 관리 (admin-only), 장비 관리
+- Topology tree inline rename (✎) and delete (✕) buttons with hover-reveal — group, site, and building nodes
+- Bulk-delete endpoints for groups, sites, buildings, devices, and users
+- Frontend `userManage` Pinia store with `fetchUsers`, `createUser`, `updateUser`, `deleteUser`, `bulkDelete`
+- `UsersView.vue`: user list table with search, role filter, create/edit modal, bulk delete
+- `GroupManageView.vue`: flat group/site/building table with inline edit and add modal
+
+### Changed
+- `auth.ts` store: added `ROLE_LEVEL`, `ROLE_LABEL`, `isSuperAdmin`, `roleLevel` computed; updated `UserRole` type to include `USER` and `GUEST`
+- `DevicesView.vue`: added search filter, checkbox bulk selection, and bulk delete
+- Topology tree conditionally rendered only on `/devices` routes
+- Active nav-item highlight uses `route.path.startsWith()` for sub-route matching
+- `devices.py` bulk-delete endpoint: typed with `BulkDeleteRequest` Pydantic model (was untyped `dict`)
+
+### Fixed
+- `conftest.py`: updated test fixture from removed `UserRole.VIEWER` to `UserRole.USER`
+- `test_register_device_invalid_mac`: updated to match MAC normalization behavior (`AABBCCDDEEFF` → 201 with normalized value; non-hex `ZZZZZZZZZZZZ` → 422)
+
 ## [0.1.0.0] - 2026-03-22
 
 ### Added
