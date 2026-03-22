@@ -66,6 +66,9 @@
       </div>
     </Transition>
 
+    <!-- Error banner -->
+    <div v-if="topologyError" class="topo-error-banner">{{ topologyError }}</div>
+
     <!-- Add link modal -->
     <Transition name="fade">
       <div v-if="showAddLink" class="modal-overlay" @click.self="closeAddLink">
@@ -166,6 +169,7 @@ const nodes = ref<Node[]>([])
 const edges = ref<Edge[]>([])
 const allDevices = ref<DeviceData[]>([])
 const linkMap = ref<Map<string, number>>(new Map()) // "srcId-tgtId" → link.id
+const topologyError = ref('')
 
 const showAddLink = ref(false)
 const linkForm = ref<{ parent_id: number | ''; child_id: number | '' }>({
@@ -208,6 +212,7 @@ const selectedEdgeLabel = computed(() => {
 
 // ── dagre layout ───────────────────────────────────────────────────────────
 function applyLayout(ns: Node[], es: Edge[]): Node[] {
+  if (ns.length === 0) return ns // dagre produces NaN positions for empty graphs
   const g = new dagre.graphlib.Graph()
   g.setDefaultEdgeLabel(() => ({}))
   g.setGraph({ rankdir: 'TB', ranksep: 90, nodesep: 55, marginx: 40, marginy: 40 })
@@ -292,10 +297,16 @@ async function deleteEdge() {
   if (!edge) return
   const linkId = linkMap.value.get(`${edge.source}-${edge.target}`)
   if (!linkId) return
-  await api.delete(`/device-links/${linkId}`)
+  try {
+    await api.delete(`/device-links/${linkId}`)
+  } catch {
+    topologyError.value = '링크 삭제에 실패했습니다. 다시 시도하세요.'
+    return // keep edge in place on failure
+  }
   edges.value = edges.value.filter(e => e.id !== selectedEdgeId.value)
   linkMap.value.delete(`${edge.source}-${edge.target}`)
   selectedEdgeId.value = null
+  topologyError.value = ''
 }
 
 // shared create link logic
@@ -313,7 +324,10 @@ async function createLink(parentId: number, childId: number) {
     edges.value = [...edges.value, newEdge]
     linkMap.value.set(key, data.id)
   } catch (e: any) {
-    // silently ignore duplicate on drag
+    if (e.response?.status !== 409) {
+      // Only swallow 409 (duplicate) — anything else is a real error
+      throw e
+    }
   }
 }
 
@@ -501,6 +515,11 @@ onMounted(loadTopology)
   white-space: nowrap;
 }
 .edge-action-bar strong { color: #d4dbe4; }
+.topo-error-banner {
+  position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%);
+  background: #3a0a0a; color: #ff6b6b; border: 1px solid #8b2222;
+  padding: 0.5rem 1rem; border-radius: 4px; font-size: 0.82rem; z-index: 500;
+}
 
 .btn-danger-sm {
   padding: 0.28rem 0.75rem;

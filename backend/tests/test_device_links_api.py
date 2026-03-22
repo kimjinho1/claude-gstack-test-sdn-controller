@@ -1,4 +1,5 @@
 """Integration tests for /device-links API endpoints."""
+import uuid
 import pytest
 from unittest.mock import patch
 
@@ -15,13 +16,10 @@ async def _seed_topology(client, token):
     return s.json()["id"], b.json()["id"]
 
 
-_mac_counter = 0
-
-
 async def _create_device(client, token, name, ip, site_id, building_id):
-    global _mac_counter
-    _mac_counter += 1
-    mac = f"AA:BB:CC:DD:EE:{_mac_counter:02X}"
+    # Generate a unique MAC per call — avoids global counter pollution across test runs
+    uid = uuid.uuid4().hex[:12].upper()
+    mac = ":".join(uid[i:i+2] for i in range(0, 12, 2))
     headers = {"Authorization": f"Bearer {token}"}
     with patch("app.api.devices.poll_device_task"):
         resp = await client.post(

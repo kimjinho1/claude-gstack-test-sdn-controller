@@ -217,6 +217,7 @@ interface EditForm {
   rest_port: number | null;
   parent_id: number | null;
   _parentLinkId: number | null;
+  _originalParentId: number | null; // snapshot at openEdit time, for change detection
 }
 
 const drawerOpen = ref(false);
@@ -237,7 +238,10 @@ async function openEdit(device: any) {
     const { data } = await api.get("/device-links");
     const parentLink = data.find((l: any) => l.child_id === device.id);
     if (parentLink) { parent_id = parentLink.parent_id; _parentLinkId = parentLink.id; }
-  } catch { /* ignore */ }
+  } catch {
+    editError.value = "링크 정보를 불러오는데 실패했습니다. 다시 시도하세요.";
+    return;
+  }
 
   editForm.value = {
     _device: device,
@@ -251,6 +255,7 @@ async function openEdit(device: any) {
     rest_port: device.rest_port ?? null,
     parent_id,
     _parentLinkId,
+    _originalParentId: parent_id,
   };
   drawerOpen.value = true;
 }
@@ -283,15 +288,19 @@ async function submitEdit() {
 
     await api.patch(`/devices/${editForm.value._device.id}`, payload);
 
-    // Handle parent link change
+    // Handle parent link change — use stored snapshot from openEdit, no re-fetch needed
     const newParentId = editForm.value.parent_id;
     const oldParentLinkId = editForm.value._parentLinkId;
-    const oldParentId = oldParentLinkId
-      ? ((await api.get("/device-links")).data.find((l: any) => l.id === oldParentLinkId)?.parent_id ?? null)
-      : null;
+    const oldParentDeviceId = editForm.value._originalParentId;
 
-    if (newParentId !== oldParentId) {
-      if (oldParentLinkId) await api.delete(`/device-links/${oldParentLinkId}`);
+    if (newParentId !== oldParentDeviceId) {
+      if (oldParentLinkId) {
+        try {
+          await api.delete(`/device-links/${oldParentLinkId}`);
+        } catch (e: any) {
+          if (e.response?.status !== 404) throw e; // link already gone is fine
+        }
+      }
       if (newParentId) {
         await api.post("/device-links", {
           parent_id: newParentId,
