@@ -5,7 +5,7 @@ from pydantic import BaseModel, field_validator, model_validator
 
 from app.models.device import DeviceProtocol, DeviceStatus
 
-_MAC_RE = re.compile(r"^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$")
+_MAC_PLAIN_RE = re.compile(r"^[0-9A-Fa-f]{12}$")
 _IP_RE = re.compile(
     r"^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)$"
 )
@@ -37,9 +37,13 @@ class DeviceCreate(BaseModel):
     @field_validator("mac_addr")
     @classmethod
     def validate_mac(cls, v: str) -> str:
-        if not _MAC_RE.match(v):
-            raise ValueError("mac_addr must be in AA:BB:CC:DD:EE:FF format")
-        return v.upper()
+        # Strip whitespace
+        v = v.strip()
+        # Remove all separators to get raw 12 hex chars
+        raw = re.sub(r"[:\-\.]", "", v)
+        if not _MAC_PLAIN_RE.match(raw):
+            raise ValueError("mac_addr must be 12 hex digits (e.g. 1234AABBCCDD or 12:34:AA:BB:CC:DD)")
+        return ":".join(raw[i:i+2] for i in range(0, 12, 2)).upper()
 
     @field_validator("ip_addr")
     @classmethod
