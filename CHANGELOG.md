@@ -2,6 +2,28 @@
 
 All notable changes to the SDN Controller project will be documented in this file.
 
+## [0.1.7.0] - 2026-03-23
+
+### Added
+- **관제/설정 화면 분리** — 장비 관제(`/devices`)와 컨트롤러 설정(`/settings`)이 별도 페이지로 분리됩니다. 장비 목록 클릭 시 사이드 드로어가 열려 실시간 포트·VLAN·알람 현황을 확인할 수 있습니다.
+- **드로어 패널 리사이즈** — 관제 드로어의 왼쪽 가장자리를 드래그해 너비를 조정할 수 있습니다 (380px – 1200px).
+- **포트 툴팁** — 포트 맵에서 포트 위에 마우스를 올리면 속도·VLAN·연결 상태 상세 정보가 툴팁으로 표시됩니다.
+- **Vitest 테스트 프레임워크** — 프론트엔드에 Vitest + @vue/test-utils + jsdom 테스트 인프라가 추가됩니다. `npm test`로 실행.
+- **포트명 약어·BPS 포맷 단위 테스트** — `shortName` 및 `formatBps` 유틸리티 함수에 대한 14개 테스트 추가.
+
+### Fixed
+- **자격증명 API 노출 방지** — SSH 연결 실패 시 Netmiko 예외 메시지(호스트명·비밀번호 포함 가능)가 HTTP 응답에 직접 노출되던 문제를 수정. 실제 에러는 서버 로그에만 기록합니다.
+- **device_type 허용 목록** — DB에서 읽은 `device_type`을 검증 없이 Netmiko에 전달하던 문제 수정. `cisco_ios`, `arista_eos`, `huawei_vrp` 등 허용된 값만 사용합니다.
+- **trigger_poll 권한 강화** — 일반 사용자도 폴링을 강제 실행할 수 있던 엔드포인트를 관리자 전용(`require_admin`)으로 변경.
+- **openMonitor 레이스 컨디션** — 장비를 빠르게 전환할 때 이전 장비의 포트·VLAN 데이터가 새 패널에 표시되던 문제 수정. 세대(generation) 카운터로 오래된 응답을 무시합니다.
+- **Huawei 포트 regex 오류** — `(up|down|*)` 패턴의 `*`가 이스케이프되지 않아 `re.error`가 발생하던 문제 수정.
+- **VLAN 이름 파싱 오류** — Huawei `_parse_vlans_huawei`에서 `re.DOTALL` 플래그로 인해 VLAN 이름이 여러 항목에 걸쳐 잘못 파싱되던 문제 수정.
+- **get_running_config StopIteration 방지** — CLI 에러 파싱에서 `next()`에 기본값을 추가해 예외 전파 방지.
+- **폴링 미관리 장비 차단** — MANAGED 상태가 아닌 장비에 폴링 태스크가 큐에 등록되지 않도록 가드 추가.
+- **드래그 이벤트 리스너 누수 방지** — DrawerPanel이 드래그 도중 언마운트될 때 `mousemove`·`mouseup` 리스너가 정리되지 않던 문제 수정.
+- **장비 전환 시 loadingConfig 초기화** — 다른 장비 클릭 시 "가져오는 중..." 버튼이 stuck 상태로 남아있던 문제 수정.
+- **포커스 아웃라인 접근성** — 검색 입력창과 필터 셀렉트에서 `outline: none`이 포커스 표시를 완전히 제거하던 문제 수정.
+
 ## [0.1.6.0] - 2026-03-22
 
 ### Added
