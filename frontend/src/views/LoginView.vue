@@ -61,32 +61,34 @@ async function handleLogin() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #1a202c;
+  background: var(--bg-base);
 }
 .login-card {
-  background: white;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 2.5rem;
   width: 360px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
 }
-h1 { font-size: 1.5rem; font-weight: 700; color: #1a202c; }
-.subtitle { color: #718096; margin-top: 0.25rem; margin-bottom: 2rem; font-size: 0.9rem; }
+h1 { font-size: 1.5rem; font-weight: 700; color: var(--accent-hover); }
+.subtitle { color: var(--text-muted); margin-top: 0.25rem; margin-bottom: 2rem; font-size: 0.9rem; }
 .field { margin-bottom: 1rem; }
-.field label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.4rem; color: #4a5568; }
+.field label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.4rem; color: var(--text-secondary); }
 .field input {
   width: 100%; padding: 0.6rem 0.8rem;
-  border: 1px solid #e2e8f0; border-radius: 6px;
+  border: 1px solid var(--border-input); border-radius: 6px;
   font-size: 0.95rem; outline: none; transition: border-color 0.2s;
+  background: var(--bg-input); color: var(--text-primary);
 }
-.field input:focus { border-color: #4299e1; }
-.error { color: #e53e3e; font-size: 0.85rem; margin-bottom: 1rem; }
+.field input:focus { border-color: var(--accent-primary); }
+.error { color: var(--danger); font-size: 0.85rem; margin-bottom: 1rem; }
 button {
   width: 100%; padding: 0.7rem;
-  background: #4299e1; color: white; border: none;
+  background: var(--accent-primary); color: white; border: none;
   border-radius: 6px; font-size: 1rem; font-weight: 500;
-  cursor: pointer; transition: background 0.2s;
+  cursor: pointer; transition: opacity 0.2s;
 }
-button:hover:not(:disabled) { background: #3182ce; }
-button:disabled { background: #a0aec0; cursor: not-allowed; }
+button:hover:not(:disabled) { opacity: 0.9; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

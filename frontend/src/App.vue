@@ -3,10 +3,21 @@
 </template>
 
 <script setup lang="ts">
-import { RouterView } from "vue-router";
+import '@/styles/theme.css'
+import { RouterView } from 'vue-router'
+import { useThemeStore } from '@/stores/theme'
+useThemeStore()
 </script>
 
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f6fa; color: #2d3748; }
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg-base);
+  color: var(--text-primary);
+}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
 </style>
