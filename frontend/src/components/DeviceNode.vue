@@ -45,7 +45,7 @@ const statusClass = computed(() => props.data.status.toLowerCase())
 }
 .device-node:hover {
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 2px rgba(29, 111, 164, 0.25);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-primary) 25%, transparent);
 }
 .device-node.managed  { border-left: 3px solid var(--success); }
 .device-node.error    { border-left: 3px solid var(--danger); }
@@ -65,9 +65,9 @@ const statusClass = computed(() => props.data.status.toLowerCase())
   flex-shrink: 0;
   background: var(--text-muted);
 }
-.managed  .status-dot { background: var(--success); box-shadow: 0 0 6px rgba(0,168,84,0.6); }
-.error    .status-dot { background: var(--danger); box-shadow: 0 0 6px rgba(194,48,48,0.6); }
-.pending  .status-dot { background: var(--warning); box-shadow: 0 0 6px rgba(217,130,43,0.5); }
+.managed  .status-dot { background: var(--success); box-shadow: 0 0 6px color-mix(in srgb, var(--success) 60%, transparent); }
+.error    .status-dot { background: var(--danger);  box-shadow: 0 0 6px color-mix(in srgb, var(--danger) 60%, transparent); }
+.pending  .status-dot { background: var(--warning); box-shadow: 0 0 6px color-mix(in srgb, var(--warning) 50%, transparent); }
 
 .node-name {
   font-size: 0.84rem;

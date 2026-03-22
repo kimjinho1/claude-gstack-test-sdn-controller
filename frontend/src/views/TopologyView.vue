@@ -42,6 +42,7 @@
           :variant="BackgroundVariant.Dots"
           :gap="28"
           :size="1.2"
+          color="var(--border-color)"
         />
         <Controls :show-interactive="false" class="topo-controls" />
         <MiniMap
@@ -516,7 +517,7 @@ onMounted(loadTopology)
 .edge-action-bar strong { color: var(--text-primary); }
 .topo-error-banner {
   position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%);
-  background: var(--danger-bg); color: #ff6b6b; border: 1px solid var(--danger);
+  background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger);
   padding: 0.5rem 1rem; border-radius: 4px; font-size: 0.82rem; z-index: 500;
 }
 

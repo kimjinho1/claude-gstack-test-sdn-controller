@@ -167,7 +167,7 @@ onUnmounted(() => {
 .alarm-badge:hover { background: var(--bg-surface); color: var(--text-primary); }
 .alarm-badge.critical {
   background: var(--danger-bg);
-  color: #ff6b6b;
+  color: var(--danger);
   border-color: var(--danger);
   animation: pulse-red 1.6s ease-in-out infinite;
 }
@@ -236,8 +236,9 @@ onUnmounted(() => {
 .nav-label { overflow: hidden; text-overflow: ellipsis; }
 
 /* Sidebar slide transition */
-.sidebar-enter-active, .sidebar-leave-active { transition: width 0.2s ease; overflow: hidden; }
-.sidebar-enter-from, .sidebar-leave-to { width: 0; }
+.sidebar-enter-active, .sidebar-leave-active { transition: max-width 0.2s ease, opacity 0.15s ease; overflow: hidden; }
+.sidebar-enter-from, .sidebar-leave-to { max-width: 0; opacity: 0; }
+.sidebar-enter-to, .sidebar-leave-from { max-width: 180px; opacity: 1; }
 
 /* ── group tree panel ───────────────────────────────────────────────────── */
 .tree-panel {
@@ -275,8 +276,9 @@ onUnmounted(() => {
 .close-btn:hover { background: var(--bg-surface); color: var(--text-primary); }
 
 /* Tree panel slide transition */
-.tree-panel-enter-active, .tree-panel-leave-active { transition: width 0.2s ease; overflow: hidden; }
-.tree-panel-enter-from, .tree-panel-leave-to { width: 0; }
+.tree-panel-enter-active, .tree-panel-leave-active { transition: max-width 0.2s ease, opacity 0.15s ease; overflow: hidden; }
+.tree-panel-enter-from, .tree-panel-leave-to { max-width: 0; opacity: 0; }
+.tree-panel-enter-to, .tree-panel-leave-from { max-width: 220px; opacity: 1; }
 
 /* ── content ────────────────────────────────────────────────────────────── */
 .content {

@@ -194,7 +194,7 @@ h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem; color: var(--t
 .field input:focus, .field select:focus { border-color: var(--accent-primary); }
 .section-title {
   font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);
-  margin: 1rem 0 0.5rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem;
+  margin: 1rem 0 0.5rem; border-top: 1px solid var(--border-subtle); padding-top: 0.75rem;
 }
 .note { font-weight: 400; color: var(--danger); font-size: 0.78rem; }
 .error { color: var(--danger); font-size: 0.85rem; margin-top: 0.75rem; }

@@ -131,7 +131,7 @@ h2 { font-size: 1.3rem; font-weight: 700; color: var(--text-primary); }
 }
 .alarm-table td { padding: 0.85rem 1rem; border-top: 1px solid var(--border-color); font-size: 0.88rem; color: var(--text-primary); }
 .sev-badge { padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.78rem; font-weight: 600; }
-.sev-badge.critical { background: rgba(194,48,48,0.2); color: #ff6b6b; }
+.sev-badge.critical { background: var(--danger-bg); color: var(--danger); }
 .sev-badge.warning { background: rgba(217,130,43,0.2); color: var(--warning); }
 .sev-badge.info { background: rgba(29,111,164,0.2); color: var(--accent-hover); }
 .action-btns { display: flex; gap: 0.4rem; }
