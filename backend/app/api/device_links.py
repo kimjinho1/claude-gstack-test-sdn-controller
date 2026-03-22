@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
+from app.models.controller import DeviceModel
 from app.models.device import Device, DeviceLink
 from app.models.user import User
 
@@ -30,9 +31,15 @@ class DeviceNodeResponse(BaseModel):
     id: int
     name: str
     ip_addr: str
+    mac_addr: str
     status: str
     model: str | None
+    model_id: int | None
+    catalog_model: str | None = None  # vendor + name from device_models (set after ORM load)
     protocol: str
+    serial_no: str | None
+    sw_version: str | None
+    uptime: str | None
 
     model_config = {"from_attributes": True}
 
@@ -51,10 +58,26 @@ async def get_topology_graph(
     devices_result = await db.execute(select(Device))
     devices = devices_result.scalars().all()
 
+    # Build catalog model name map (vendor + name) for devices that have model_id
+    model_ids = {d.model_id for d in devices if d.model_id}
+    catalog_map: dict[int, str] = {}
+    if model_ids:
+        models_result = await db.execute(
+            select(DeviceModel).where(DeviceModel.id.in_(model_ids))
+        )
+        for m in models_result.scalars().all():
+            catalog_map[m.id] = f"{m.vendor} {m.name}".strip()
+
+    device_responses = []
+    for d in devices:
+        r = DeviceNodeResponse.model_validate(d)
+        r.catalog_model = catalog_map.get(d.model_id) if d.model_id else None
+        device_responses.append(r)
+
     links_result = await db.execute(select(DeviceLink))
     links = links_result.scalars().all()
 
-    return {"devices": devices, "links": links}
+    return {"devices": device_responses, "links": links}
 
 
 @router.get("", response_model=list[LinkResponse])

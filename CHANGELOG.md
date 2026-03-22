@@ -2,6 +2,19 @@
 
 All notable changes to the SDN Controller project will be documented in this file.
 
+## [0.1.6.0] - 2026-03-22
+
+### Added
+- **가상 장비 컨테이너 IP** — after launching a virtual device container, the UI now shows the container's direct IP on the `sdn-lab` Docker network. Register devices with `container_ip:22` (not `localhost:<ssh_port>`) so Celery workers can connect directly without host-port mapping.
+- **Mock Arista cEOS SSH server** (`docker/mock-ceos/`) — lightweight Python paramiko server that responds to Arista EOS CLI commands (show version, show interfaces, show vlan, show mac address-table). Replaces the real cEOS-lab image for lab testing without a license.
+- **Docker-in-Docker worker** — `docker-compose.yml` now mounts the host Docker socket into the backend/worker container so the API can launch virtual device containers from inside the stack.
+- **Port traffic BPS calculation** — device polling now computes `traffic_in_bps` and `traffic_out_bps` from byte counter deltas between polls. Handles counter wrap/reset gracefully.
+
+### Fixed
+- **Arista EOS `show version` parsing** — SSH driver now correctly parses `Software image version: X.Y.ZF`, `Uptime: N weeks, N days`, and `Serial number: JPEXXX` formats. Previously these fields were missed and devices stayed in PENDING status.
+- **TextFSM partial results** — when TextFSM returns some fields but not all required fields, the driver now falls back to regex parsing on raw text instead of returning incomplete SystemInfo.
+- **Worker SSH connection failure** — worker was connecting to `container_ip:2222` (host-mapped port) instead of `container_ip:22` (direct container port). Fixed by storing `container_ip` from docker inspect and displaying it in the UI as the correct address to use.
+
 ## [0.1.5.0] - 2026-03-22
 
 ### Added

@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from enum import Enum as PyEnum
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import BigInteger, DateTime, Enum, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -36,6 +36,9 @@ class Device(Base):
     # Phase 1 supports: cisco_ios, cisco_nxos, cisco_xe
     # Phase 2+:         hp_procurve, huawei_vrp
     device_type: Mapped[str] = mapped_column(String(32), nullable=False, default="cisco_ios")
+
+    # Optional FK to device_models catalog (nullable — legacy devices may not have one)
+    model_id: Mapped[int | None] = mapped_column(ForeignKey("device_models.id", ondelete="SET NULL"), nullable=True, index=True)
 
     # SSH credentials (encrypted, non-null only when protocol=SSH)
     ssh_id: Mapped[str | None] = mapped_column(String(128))
@@ -95,12 +98,24 @@ class DevicePort(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     device_id: Mapped[int] = mapped_column(ForeignKey("devices.id", ondelete="CASCADE"), nullable=False)
     port_name: Mapped[str] = mapped_column(String(64), nullable=False)
-    port_status: Mapped[str] = mapped_column(String(16))  # UP / DOWN
+    port_status: Mapped[str] = mapped_column(String(16))        # UP / DOWN (line protocol)
+    admin_status: Mapped[str | None] = mapped_column(String(16))  # up / down (admin — shutdown or not)
+    description: Mapped[str | None] = mapped_column(String(255))
+    port_type: Mapped[str | None] = mapped_column(String(64))   # e.g. "1000BASE-T", "SFP+"
     speed: Mapped[str | None] = mapped_column(String(32))
     duplex: Mapped[str | None] = mapped_column(String(16))
     connected_mac: Mapped[str | None] = mapped_column(String(17))
     connected_ip: Mapped[str | None] = mapped_column(String(45))
-    vlan_id: Mapped[str | None] = mapped_column(String(16))
+    # VLAN switchport info
+    vlan_mode: Mapped[str | None] = mapped_column(String(16))   # access / trunk
+    vlan_id: Mapped[str | None] = mapped_column(String(16))     # access VLAN or native VLAN
+    pvid: Mapped[str | None] = mapped_column(String(16))        # native/untagged VLAN
+    tagged_vlans: Mapped[str | None] = mapped_column(String(512))  # comma-separated e.g. "10,20,30"
+    # Traffic counters (raw bytes from device — used to calculate bps)
+    rx_bytes: Mapped[int | None] = mapped_column(BigInteger)
+    tx_bytes: Mapped[int | None] = mapped_column(BigInteger)
+    traffic_in_bps: Mapped[float | None] = mapped_column(Float)
+    traffic_out_bps: Mapped[float | None] = mapped_column(Float)
     polled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     device: Mapped["Device"] = relationship("Device", back_populates="ports")

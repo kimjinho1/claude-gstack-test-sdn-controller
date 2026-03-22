@@ -75,7 +75,8 @@
           <tr>
             <th>이름</th>
             <th>모델</th>
-            <th>SSH 포트</th>
+            <th>컨테이너 IP (장비 등록용)</th>
+            <th>호스트 포트</th>
             <th>상태</th>
             <th>컨테이너 ID</th>
             <th>생성 시각</th>
@@ -86,6 +87,13 @@
           <tr v-for="v in store.virtualDevices" :key="v.id">
             <td>{{ v.name }}</td>
             <td>{{ modelName(v.model_id) }}</td>
+            <td>
+              <span v-if="v.container_ip" class="ip-hint">
+                <code>{{ v.container_ip }}</code>
+                <span class="ip-note">SSH 포트: 22</span>
+              </span>
+              <span v-else class="txt-muted">—</span>
+            </td>
             <td>{{ v.ssh_port }}</td>
             <td>
               <span class="status-badge" :class="v.status">{{ statusLabel(v.status) }}</span>
@@ -104,6 +112,10 @@
           </tr>
         </tbody>
       </table>
+      <p class="reg-hint">
+        💡 장비 등록 시 <strong>컨테이너 IP</strong>와 <strong>SSH 포트 22</strong>를 사용하세요.
+        (호스트 포트는 외부 접속용이며 폴러가 직접 연결하지 않습니다.)
+      </p>
     </div>
 
     <!-- ── 모델 추가/수정 모달 ──────────────────────────────────────── -->
@@ -444,6 +456,16 @@ code { font-size: 0.8rem; background: var(--bg-elevated); padding: 0.1rem 0.35re
 
 .empty-msg { color: var(--text-secondary); text-align: center; padding: 2.5rem 0; }
 .hint { font-size: 0.82rem; opacity: 0.7; }
+.txt-muted { color: var(--text-muted); }
+
+.ip-hint { display: flex; align-items: center; gap: 0.4rem; }
+.ip-note { font-size: 0.75rem; color: var(--text-muted); }
+
+.reg-hint {
+  margin-top: 0.75rem; font-size: 0.82rem; color: var(--text-secondary);
+  padding: 0.6rem 0.75rem; background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle); border-radius: 6px; line-height: 1.5;
+}
 
 /* Modal */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 300; }

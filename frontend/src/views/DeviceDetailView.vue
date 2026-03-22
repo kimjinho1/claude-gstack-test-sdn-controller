@@ -44,37 +44,14 @@
       </div>
 
       <div class="tab-content">
-        <!-- Ports -->
+        <!-- Port Map -->
         <div v-if="activeTab === 'ports'">
-          <table class="data-table">
-            <thead><tr><th>포트</th><th>상태</th><th>속도</th><th>VLAN</th><th>연결 MAC</th><th>연결 IP</th></tr></thead>
-            <tbody>
-              <tr v-if="ports.length === 0"><td colspan="6" class="empty">포트 정보 없음</td></tr>
-              <tr v-for="p in ports" :key="p.id">
-                <td class="mono">{{ p.port_name }}</td>
-                <td><span :class="p.port_status === 'UP' ? 'up' : 'down'">{{ p.port_status }}</span></td>
-                <td>{{ p.speed || "—" }}</td>
-                <td>{{ p.vlan_id || "—" }}</td>
-                <td class="mono">{{ p.connected_mac || "—" }}</td>
-                <td>{{ p.connected_ip || "—" }}</td>
-              </tr>
-            </tbody>
-          </table>
+          <SwitchPortMap :ports="ports" :label="device.name" />
         </div>
 
-        <!-- VLANs -->
+        <!-- VLAN Map -->
         <div v-if="activeTab === 'vlans'">
-          <table class="data-table">
-            <thead><tr><th>VLAN ID</th><th>이름</th><th>수집 시각</th></tr></thead>
-            <tbody>
-              <tr v-if="vlans.length === 0"><td colspan="3" class="empty">VLAN 정보 없음</td></tr>
-              <tr v-for="v in vlans" :key="v.id">
-                <td class="mono">{{ v.vlan_id }}</td>
-                <td>{{ v.vlan_name || "—" }}</td>
-                <td>{{ formatTime(v.polled_at) }}</td>
-              </tr>
-            </tbody>
-          </table>
+          <VlanMap :vlans="vlans" :ports="ports" />
         </div>
 
         <!-- Endpoints -->
@@ -127,6 +104,8 @@ import { useRoute } from "vue-router";
 import api from "@/api/client";
 import { useAlarmStore } from "@/stores/alarm";
 import StatusBadge from "@/components/StatusBadge.vue";
+import SwitchPortMap from "@/components/SwitchPortMap.vue";
+import VlanMap from "@/components/VlanMap.vue";
 
 const route = useRoute();
 const alarmStore = useAlarmStore();
@@ -155,22 +134,21 @@ function formatTime(iso: string | null) {
 
 async function switchTab(tab: string) {
   activeTab.value = tab;
-  await loadTabData(tab);
-}
-
-async function loadTabData(tab: string) {
   const id = route.params.id;
-  if (tab === "ports") ports.value = (await api.get(`/devices/${id}/ports`)).data;
-  else if (tab === "vlans") vlans.value = (await api.get(`/devices/${id}/vlans`)).data;
-  else if (tab === "endpoints") endpoints.value = (await api.get(`/devices/${id}/endpoints`)).data;
-  else if (tab === "alarms") alarmStore.fetchAlarms();
+  if (tab === "vlans" && vlans.value.length === 0) {
+    vlans.value = (await api.get(`/devices/${id}/vlans`)).data;
+  } else if (tab === "endpoints" && endpoints.value.length === 0) {
+    endpoints.value = (await api.get(`/devices/${id}/endpoints`)).data;
+  } else if (tab === "alarms") {
+    alarmStore.fetchAlarms();
+  }
 }
 
 onMounted(async () => {
   const id = route.params.id;
   device.value = (await api.get(`/devices/${id}`)).data;
   if (device.value.status === "MANAGED") {
-    await loadTabData("ports");
+    ports.value = (await api.get(`/devices/${id}/ports`)).data;
   }
 });
 </script>
@@ -185,7 +163,7 @@ h2 { font-size: 1.4rem; font-weight: 700; color: var(--text-primary); }
 .info-label { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.3rem; }
 .info-value { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
 .mono { font-family: monospace; font-size: 0.85rem; }
-.tabs-container { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; }
+.tabs-container { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; overflow: visible; }
 .tabs { display: flex; border-bottom: 1px solid var(--border-color); }
 .tab { padding: 0.75rem 1.25rem; background: none; border: none; cursor: pointer; font-size: 0.9rem; color: var(--text-muted); border-bottom: 2px solid transparent; transition: all 0.2s; }
 .tab.active { color: var(--accent-primary); border-bottom-color: var(--accent-primary); font-weight: 500; }
@@ -193,8 +171,6 @@ h2 { font-size: 1.4rem; font-weight: 700; color: var(--text-primary); }
 .data-table { width: 100%; border-collapse: collapse; }
 .data-table th { padding: 0.6rem 0.75rem; text-align: left; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border-subtle); }
 .data-table td { padding: 0.7rem 0.75rem; font-size: 0.88rem; border-bottom: 1px solid var(--border-color); color: var(--text-primary); }
-.up { color: var(--success); font-weight: 500; }
-.down { color: var(--danger); font-weight: 500; }
 .critical { color: var(--danger); font-weight: 600; }
 .warning { color: var(--warning); }
 .info { color: var(--accent-primary); }

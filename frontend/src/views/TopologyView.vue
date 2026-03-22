@@ -150,9 +150,15 @@ interface DeviceData {
   id: number
   name: string
   ip_addr: string
+  mac_addr: string
   status: string
   protocol: string
   model: string | null
+  model_id: number | null
+  catalog_model: string | null
+  serial_no: string | null
+  sw_version: string | null
+  uptime: string | null
 }
 interface LinkData {
   id: number

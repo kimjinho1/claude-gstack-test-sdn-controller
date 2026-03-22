@@ -19,10 +19,10 @@ celery_app.conf.update(
     worker_prefetch_multiplier=1,
     task_acks_late=True,
     beat_schedule={
-        # Poll PENDING/ERROR devices every 5 minutes
+        # Poll PENDING/ERROR devices every 1 minute
         "poll-pending-devices": {
             "task": "app.tasks.device_poll.poll_pending_devices",
-            "schedule": crontab(minute="*/5"),
+            "schedule": crontab(minute="*"),
         },
         # Poll MANAGED devices for port/vlan/endpoint every 1 minute
         "poll-managed-devices": {

@@ -81,6 +81,15 @@
                 <option value="arista_eos">Arista EOS</option>
               </select>
             </div>
+            <div class="field">
+              <label>장비 모델</label>
+              <select v-model="form.model_id">
+                <option :value="null">없음</option>
+                <option v-for="m in controllerStore.deviceModels" :key="m.id" :value="m.id">
+                  {{ m.vendor }} {{ m.name }}
+                </option>
+              </select>
+            </div>
           </div>
         </template>
 
@@ -115,18 +124,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive } from "vue";
+import { ref, computed, reactive, onMounted } from "vue";
 import { useTopologyStore } from "@/stores/topology";
 import { useDeviceStore } from "@/stores/device";
+import { useControllerStore } from "@/stores/controller";
 
 const emit = defineEmits(["close", "created"]);
 
 const topologyStore = useTopologyStore();
 const deviceStore = useDeviceStore();
+const controllerStore = useControllerStore();
 
 const groups = computed(() => topologyStore.groups);
 const error = ref("");
 const loading = ref(false);
+
+onMounted(() => controllerStore.fetchDeviceModels());
 
 const form = reactive({
   name: "", ip_addr: "", mac_addr: "",
@@ -135,6 +148,7 @@ const form = reactive({
   building_id: "" as number | "",
   floor: undefined as number | undefined,
   device_type: "cisco_ios",
+  model_id: null as number | null,
   ssh_id: "", ssh_password: "", ssh_port: 22,
   rest_id: "", rest_password: "", rest_port: undefined as number | undefined,
 });
@@ -167,6 +181,7 @@ async function handleSubmit() {
       protocol: form.protocol,
       site_id: form.site_id, building_id: form.building_id,
       floor: form.floor,
+      model_id: form.model_id,
     };
     if (form.protocol === "SSH") {
       payload.device_type = form.device_type;
