@@ -238,7 +238,7 @@ class SSHDriver(AbstractProtocolDriver):
         # Example line: "GigabitEthernet0/0/1    up      up       1000M   full  --"
         for line in output.splitlines():
             m = re.match(
-                r'^(\S+)\s+(up|down|*)\s+(up|down)\s+(\S+)\s+(full|half|-+)\s*(.*)$',
+                r'^(\S+)\s+(up|down|\*)\s+(up|down)\s+(\S+)\s+(full|half|-+)\s*(.*)$',
                 line, re.IGNORECASE,
             )
             if not m:
@@ -281,7 +281,7 @@ class SSHDriver(AbstractProtocolDriver):
 
     def _parse_vlans_huawei(self, text: str) -> list[VlanInfo]:
         vlans = []
-        for m in re.finditer(r'^VLAN\s+(\d+)\s+.*?Name:\s*(\S+)', text, re.MULTILINE | re.DOTALL):
+        for m in re.finditer(r'^VLAN\s+(\d+)\s+[^\n]*?Name:\s*(\S+)', text, re.MULTILINE):
             vlans.append(VlanInfo(vlan_id=m.group(1), vlan_name=m.group(2)))
         return vlans
 
@@ -349,7 +349,8 @@ class SSHDriver(AbstractProtocolDriver):
         # Detect CLI error responses (lines starting with %)
         if _is_cli_error(output):
             first_err = next(
-                l.strip() for l in output.splitlines() if l.strip().startswith("%")
+                (l.strip() for l in output.splitlines() if l.strip().startswith("%")),
+                "unknown CLI error",
             )
             raise RuntimeError(
                 f"장비가 명령어를 거부했습니다 ({self._device_type}): {first_err}"

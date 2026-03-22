@@ -246,6 +246,7 @@ async def trigger_poll(
     device = result.scalar_one_or_none()
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
+    _require_managed(device)
     poll_device_task.delay(device_id)
     return {"queued": True}
 

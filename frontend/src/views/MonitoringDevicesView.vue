@@ -383,6 +383,7 @@ async function openMonitor(device: any) {
   endpoints.value = [];
   runningConfig.value = "";
   configError.value = "";
+  loadingConfig.value = false;
   portExpanded.value = true;
   vlanExpanded.value = true;
 

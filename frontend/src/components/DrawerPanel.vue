@@ -24,7 +24,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch, onUnmounted } from "vue";
 
 const props = defineProps<{ modelValue: boolean; title: string; width?: number }>();
 defineEmits<{ (e: "update:modelValue", v: boolean): void }>();
@@ -60,6 +60,8 @@ function stopResize() {
   document.body.style.cursor = "";
   document.body.style.userSelect = "";
 }
+
+onUnmounted(stopResize);
 </script>
 
 <style scoped>
