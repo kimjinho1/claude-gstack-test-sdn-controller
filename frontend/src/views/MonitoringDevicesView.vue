@@ -78,37 +78,37 @@
             <!-- ── 기본정보 탭 ── -->
             <div v-if="activeTab === 'info'" class="info-tab">
 
-              <!-- 장비 요약 카드 -->
-              <div class="device-info-card">
-                <div class="dic-status-row">
-                  <StatusBadge :status="selectedDevice.status" />
-                  <span class="dic-name-tag">{{ selectedDevice.name }}</span>
+              <!-- 장비 요약 -->
+              <div class="device-summary">
+                <StatusBadge :status="selectedDevice.status" />
+                <span class="summary-name">{{ selectedDevice.name }}</span>
+              </div>
+
+              <!-- 필드 목록 -->
+              <div class="field-list">
+                <div class="field-item">
+                  <span class="field-lbl">IP</span>
+                  <span class="field-val mono-val">{{ selectedDevice.ip_addr }}</span>
                 </div>
-                <div class="dic-grid">
-                  <div class="dic-item">
-                    <span class="dic-lbl">IP</span>
-                    <span class="dic-val mono-val">{{ selectedDevice.ip_addr }}</span>
-                  </div>
-                  <div class="dic-item">
-                    <span class="dic-lbl">MAC</span>
-                    <span class="dic-val mono-val">{{ selectedDevice.mac_addr || "—" }}</span>
-                  </div>
-                  <div class="dic-item">
-                    <span class="dic-lbl">모델</span>
-                    <span class="dic-val">{{ selectedDevice.model || "—" }}</span>
-                  </div>
-                  <div class="dic-item">
-                    <span class="dic-lbl">시리얼</span>
-                    <span class="dic-val mono-val">{{ selectedDevice.serial_no || "—" }}</span>
-                  </div>
-                  <div class="dic-item">
-                    <span class="dic-lbl">SW 버전</span>
-                    <span class="dic-val">{{ selectedDevice.sw_version || "—" }}</span>
-                  </div>
-                  <div class="dic-item">
-                    <span class="dic-lbl">업타임</span>
-                    <span class="dic-val uptime-val">{{ parseUptime(selectedDevice.uptime) }}</span>
-                  </div>
+                <div class="field-item">
+                  <span class="field-lbl">MAC</span>
+                  <span class="field-val mono-val">{{ selectedDevice.mac_addr || "—" }}</span>
+                </div>
+                <div class="field-item">
+                  <span class="field-lbl">모델</span>
+                  <span class="field-val">{{ selectedDevice.model || "—" }}</span>
+                </div>
+                <div class="field-item">
+                  <span class="field-lbl">시리얼</span>
+                  <span class="field-val mono-val">{{ selectedDevice.serial_no || "—" }}</span>
+                </div>
+                <div class="field-item">
+                  <span class="field-lbl">SW 버전</span>
+                  <span class="field-val">{{ selectedDevice.sw_version || "—" }}</span>
+                </div>
+                <div class="field-item">
+                  <span class="field-lbl">업타임</span>
+                  <span class="field-val uptime-val">{{ parseUptime(selectedDevice.uptime) }}</span>
                 </div>
               </div>
 
@@ -492,53 +492,45 @@ td { padding: 0.7rem 1rem; border-top: 1px solid var(--border-color); font-size:
 /* ── Monitor drawer ── */
 .monitor-content { display: flex; flex-direction: column; }
 
-/* ── Device info card ── */
-.device-info-card {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  padding: 1rem 1.1rem;
-  margin-bottom: 1rem;
-}
-.dic-status-row {
+/* ── Device summary ── */
+.device-summary {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.9rem;
   padding-bottom: 0.65rem;
   border-bottom: 1px solid var(--border-color);
 }
-.dic-name-tag {
+.summary-name {
   font-size: 0.92rem;
   font-weight: 600;
   color: var(--text-muted);
 }
-.dic-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.5rem 1.5rem;
-}
-.dic-item {
+
+/* ── Field list ── */
+.field-list {
   display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  min-width: 0;
+  flex-direction: column;
+  margin-bottom: 1rem;
 }
-.dic-lbl {
-  font-size: 0.78rem;
+.field-item {
+  display: flex;
+  flex-direction: column;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+.field-item:last-child { border-bottom: none; }
+.field-lbl {
+  font-size: 0.72rem;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
-  min-width: 56px;
-  flex-shrink: 0;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.18rem;
 }
-.dic-val {
-  font-size: 0.95rem;
+.field-val {
+  font-size: 0.9rem;
   color: var(--text-primary);
   font-weight: 500;
-  word-break: break-all;
-  min-width: 0;
 }
 .mono-val { font-family: monospace; font-size: 0.88rem; }
 .uptime-val { font-family: monospace; color: var(--accent-hover); font-weight: 600; }

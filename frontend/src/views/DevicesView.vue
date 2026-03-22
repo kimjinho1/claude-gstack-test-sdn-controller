@@ -71,34 +71,22 @@
     <DrawerPanel v-model="drawerOpen" :title="editForm ? editForm.name || '장비 정보' : '장비 정보'" :width="480">
       <div v-if="editForm" class="drawer-content">
 
-        <!-- Read-only info section -->
-        <div class="info-section">
-          <div class="section-heading">장비 현황</div>
-          <div class="info-grid">
-            <span class="info-label">IP 주소</span><span class="mono">{{ editForm._device.ip_addr }}</span>
-            <span class="info-label">MAC 주소</span><span class="mono">{{ editForm._device.mac_addr }}</span>
-            <span class="info-label">프로토콜</span><span><span class="proto-badge">{{ editForm._device.protocol }}</span></span>
-            <span class="info-label">상태</span><span><StatusBadge :status="editForm._device.status" /></span>
-            <template v-if="editForm._device.model">
-              <span class="info-label">모델</span><span>{{ editForm._device.model }}</span>
-            </template>
-            <template v-if="editForm._device.uptime">
-              <span class="info-label">업타임</span><span>{{ editForm._device.uptime }}</span>
-            </template>
-            <template v-if="editForm._device.last_polled_at">
-              <span class="info-label">마지막 폴링</span><span>{{ formatTime(editForm._device.last_polled_at) }}</span>
-            </template>
-          </div>
-        </div>
-
-        <div class="divider" />
-
         <!-- Editable fields -->
         <div class="section-heading">정보 수정</div>
 
         <div class="form-field">
           <label class="form-label">장비명</label>
           <input v-model="editForm.name" class="form-input" placeholder="장비명" />
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">IP 주소</label>
+          <input v-model="editForm.ip_addr" class="form-input" placeholder="예: 10.0.1.1" />
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">MAC 주소</label>
+          <input :value="editForm._device.mac_addr" class="form-input mono" disabled />
         </div>
 
         <div class="form-field">
@@ -220,6 +208,7 @@ onUnmounted(() => document.removeEventListener("click", closeCtx));
 interface EditForm {
   _device: any;
   name: string;
+  ip_addr: string;
   floor: number | null;
   model_id: number | null;
   ssh_id: string;
@@ -259,6 +248,7 @@ async function openEdit(device: any) {
   editForm.value = {
     _device: device,
     name: device.name,
+    ip_addr: device.ip_addr ?? "",
     floor: device.floor ?? null,
     model_id: device.model_id ?? null,
     ssh_id: device.ssh_id ?? "",
@@ -288,6 +278,7 @@ async function submitEdit() {
     const payload: Record<string, any> = {
       name: editForm.value.name,
     };
+    if (editForm.value.ip_addr) payload.ip_addr = editForm.value.ip_addr;
     if (editForm.value.floor != null) payload.floor = editForm.value.floor;
     payload.model_id = editForm.value.model_id;
 
@@ -490,9 +481,6 @@ td { padding: 0.72rem 1rem; border-top: 1px solid var(--border-color); font-size
 }
 .divider { border: none; border-top: 1px solid var(--border-subtle); margin: 1.2rem 0; }
 
-.info-section { margin-bottom: 0; }
-.info-grid { display: grid; grid-template-columns: 7.5rem 1fr; gap: 0.5rem 1rem; align-items: center; }
-.info-label { font-size: 0.82rem; color: var(--text-muted); }
 
 .form-field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.8rem; }
 .form-label { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
@@ -501,6 +489,7 @@ td { padding: 0.72rem 1rem; border-top: 1px solid var(--border-color); font-size
   font-size: 0.87rem; color: var(--text-primary); background: var(--bg-input); outline: none;
 }
 .form-input:focus { border-color: var(--accent-primary); }
+.form-input:disabled { opacity: 0.5; cursor: not-allowed; }
 .hint { font-size: 0.73rem; color: var(--text-muted); font-weight: 400; }
 .error-msg { color: var(--danger); font-size: 0.82rem; margin-top: 0.75rem; }
 </style>
