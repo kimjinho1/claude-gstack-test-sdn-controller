@@ -6,8 +6,7 @@ app = "sdn-controller"        # ← fly apps create sdn-controller 으로 생성
 primary_region = "nrt"        # Tokyo (한국에서 가장 가까운 리전)
 
 [build]
-# build context = backend/ (fly.toml 위치 기준)
-# 기존 backend/Dockerfile 그대로 사용
+  dockerfile = "Dockerfile"
 
 [deploy]
 # ★ 핵심 수정 — DB 충돌 방지:
