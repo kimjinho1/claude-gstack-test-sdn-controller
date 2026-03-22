@@ -97,3 +97,21 @@ Celery beat 지연 + 재시도 환경에서 현실적으로 발생 가능.
 단기 해결: alarm_check 태스크는 `@celery_app.task(..., acks_late=True)` + `CELERYD_PREFETCH_MULTIPLIER=1`로 직렬화.
 
 **Depends on / blocked by:** 워커 수평 확장 시점 (현재 단일 워커면 낮은 우선순위)
+
+---
+
+## TODO-6: device-links API RBAC 적용
+
+**What:** `POST /device-links` 및 `DELETE /device-links/{id}` 엔드포인트에 역할 기반 접근 제어(RBAC) 추가
+
+**Why:** 현재 인증된 모든 사용자(VIEWER 포함)가 토폴로지 링크를 생성/삭제할 수 있다.
+SDN 컨텍스트에서 링크는 논리 네트워크 토폴로지를 의미하므로, 읽기 전용 운영자가 임의로 변경하면 실제 네트워크 구성을 잘못 표현할 수 있다.
+
+**Pros:** VIEWER는 조회만, ADMIN 이상만 생성/삭제 가능 — 의도치 않은 토폴로지 변경 방지.
+
+**Cons:** `require_admin` 의존성 하나 추가하면 충분. 추가 비용 최소.
+
+**Context:** `backend/app/api/deps.py`에 `require_admin` 의존성이 이미 있다. `GET /device-links/graph` 및 `GET /device-links`는 모든 인증 사용자에게 허용 유지. `POST`/`DELETE`에만 `require_admin` 적용.
+adversarial review (v0.1.3.0 shipping)에서 발견됨.
+
+**Depends on / blocked by:** 없음
