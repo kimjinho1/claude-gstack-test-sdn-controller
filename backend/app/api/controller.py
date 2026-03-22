@@ -144,19 +144,20 @@ async def launch_virtual_device(
     docker_image = model.docker_image
     ssh_port = body.ssh_port
 
-    def _launch():
+    def _ensure_network_and_launch():
+        # Ensure sdn-lab bridge network exists (idempotent — fails silently if already exists)
+        subprocess.run(
+            ["docker", "network", "create", "--driver", "bridge", "sdn-lab"],
+            capture_output=True,
+        )
         return subprocess.run(
             [
                 "docker", "run", "-d",
                 "--name", container_name,
+                "--network", "sdn-lab",
                 "-p", f"{ssh_port}:22",
-                "-e", "INTFTYPE=eth",
-                "-e", "ETBA=1",
-                "-e", "SKIP_ZEROTOUCH_BARRIER_IN_SYSDBINIT=1",
-                "-e", "CEOS=1",
-                "-e", "EOS_PLATFORM=ceoslab",
+                "-e", f"MOCK_HOSTNAME={body.name}",
                 docker_image,
-                "/sbin/init",
             ],
             capture_output=True,
             text=True,
@@ -164,13 +165,18 @@ async def launch_virtual_device(
         )
 
     try:
-        proc = await asyncio.to_thread(_launch)
+        proc = await asyncio.to_thread(_ensure_network_and_launch)
         if proc.returncode == 0:
             container_id = proc.stdout.strip()
             # Validate Docker returns a proper 64-char hex container ID
             if _CONTAINER_ID_RE.match(container_id):
                 vd.container_id = container_id
                 vd.status = "running"
+                # Inspect container IP on sdn-lab network (for direct worker connection)
+                container_ip = await asyncio.to_thread(
+                    _docker_container_ip, container_id
+                )
+                vd.container_ip = container_ip
             else:
                 vd.status = "error"
         else:
@@ -251,3 +257,23 @@ def _docker_container_status(container_id: str) -> str:
     except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
         pass
     return "error"
+
+
+def _docker_container_ip(container_id: str) -> str | None:
+    """Return the container's IP on the sdn-lab network.
+    Runs synchronously — must be called via asyncio.to_thread()."""
+    try:
+        result = subprocess.run(
+            [
+                "docker", "inspect",
+                "--format", '{{(index .NetworkSettings.Networks "sdn-lab").IPAddress}}',
+                container_id,
+            ],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode == 0:
+            ip = result.stdout.strip()
+            return ip if ip else None
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+        pass
+    return None

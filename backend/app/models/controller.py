@@ -41,6 +41,7 @@ class VirtualDevice(Base):
     name: Mapped[str] = mapped_column(String(128), nullable=False)           # container name
     model_id: Mapped[int] = mapped_column(ForeignKey("device_models.id"), nullable=False)
     container_id: Mapped[str | None] = mapped_column(String(128))            # Docker container ID
+    container_ip: Mapped[str | None] = mapped_column(String(45))            # IP on sdn-lab network (use this for polling)
     ssh_port: Mapped[int] = mapped_column(Integer, nullable=False)           # host port mapped to :22
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="starting")
     # starting | running | stopped | error

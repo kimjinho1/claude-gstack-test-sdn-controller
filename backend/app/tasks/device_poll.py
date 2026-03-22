@@ -11,6 +11,7 @@ from sqlalchemy import create_engine, delete
 from sqlalchemy.orm import sessionmaker
 
 from app.core.security import decrypt_credential
+import app.models  # noqa: F401 — registers all SQLAlchemy mappers
 from app.protocols.ssh.ssh_driver import get_ssh_driver
 from app.tasks.celery_app import celery_app
 
@@ -146,19 +147,61 @@ def _poll_device(db, device):
 
 
 def _update_ports(db, device, driver, now):
+    from sqlalchemy import select
     from app.models.device import DevicePort
 
+    # Snapshot existing ports for bps calculation before deleting
+    existing = {
+        row.port_name: row
+        for row in db.execute(
+            select(DevicePort).where(DevicePort.device_id == device.id)
+        ).scalars().all()
+    }
+
     db.execute(delete(DevicePort).where(DevicePort.device_id == device.id))
+
     for p in driver.get_ports():
+        # Calculate traffic bps from byte counter delta
+        traffic_in_bps = None
+        traffic_out_bps = None
+        old = existing.get(p.port_name)
+        if (
+            old is not None
+            and old.polled_at is not None
+            and p.rx_bytes is not None
+            and old.rx_bytes is not None
+            and p.tx_bytes is not None
+            and old.tx_bytes is not None
+        ):
+            elapsed = (now - old.polled_at).total_seconds()
+            if elapsed > 0:
+                rx_delta = p.rx_bytes - old.rx_bytes
+                tx_delta = p.tx_bytes - old.tx_bytes
+                # Handle counter wrap/reset
+                if rx_delta >= 0:
+                    traffic_in_bps = rx_delta * 8 / elapsed
+                if tx_delta >= 0:
+                    traffic_out_bps = tx_delta * 8 / elapsed
+
         db.add(DevicePort(
             device_id=device.id,
             port_name=p.port_name,
             port_status=p.port_status,
+            admin_status=p.admin_status,
+            description=p.description,
+            port_type=p.port_type,
             speed=p.speed,
             duplex=p.duplex,
             connected_mac=p.connected_mac,
             connected_ip=p.connected_ip,
+            vlan_mode=p.vlan_mode,
             vlan_id=p.vlan_id,
+            pvid=p.pvid,
+            tagged_vlans=p.tagged_vlans,
+            rx_bytes=p.rx_bytes,
+            tx_bytes=p.tx_bytes,
+            traffic_in_bps=traffic_in_bps,
+            traffic_out_bps=traffic_out_bps,
             polled_at=now,
         ))
 

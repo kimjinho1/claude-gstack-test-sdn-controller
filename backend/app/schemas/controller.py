@@ -48,6 +48,7 @@ class VirtualDeviceResponse(BaseModel):
     name: str
     model_id: int
     container_id: str | None
+    container_ip: str | None
     ssh_port: int
     status: str
     created_at: datetime

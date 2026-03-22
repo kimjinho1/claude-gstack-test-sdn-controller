@@ -62,6 +62,7 @@ async def create_device(
         floor=body.floor,
         protocol=body.protocol,
         device_type=body.device_type,
+        model_id=body.model_id,
         status=DeviceStatus.PENDING,
     )
 
@@ -112,7 +113,7 @@ async def update_device(
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
 
-    for k, v in body.model_dump(exclude_none=True).items():
+    for k, v in body.model_dump(exclude_unset=True).items():
         if k == "ssh_password":
             device.ssh_password_encrypted = encrypt_credential(v)
         elif k == "rest_password":

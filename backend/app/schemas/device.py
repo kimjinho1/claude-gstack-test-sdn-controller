@@ -23,6 +23,7 @@ class DeviceCreate(BaseModel):
     floor: int | None = None
     protocol: DeviceProtocol
     device_type: str = "cisco_ios"
+    model_id: int | None = None
 
     # SSH fields
     ssh_id: str | None = None
@@ -73,6 +74,7 @@ class DeviceCreate(BaseModel):
 class DeviceUpdate(BaseModel):
     name: str | None = None
     floor: int | None = None
+    model_id: int | None = None
     ssh_id: str | None = None
     ssh_password: str | None = None
     ssh_port: int | None = None
@@ -91,6 +93,7 @@ class DeviceResponse(BaseModel):
     floor: int | None
     protocol: DeviceProtocol
     device_type: str
+    model_id: int | None
     status: DeviceStatus
     uptime: str | None
     serial_no: str | None
@@ -106,11 +109,21 @@ class PortResponse(BaseModel):
     id: int
     port_name: str
     port_status: str
+    admin_status: str | None
+    description: str | None
+    port_type: str | None
     speed: str | None
     duplex: str | None
     connected_mac: str | None
     connected_ip: str | None
+    vlan_mode: str | None
     vlan_id: str | None
+    pvid: str | None
+    tagged_vlans: str | None
+    rx_bytes: int | None
+    tx_bytes: int | None
+    traffic_in_bps: float | None
+    traffic_out_bps: float | None
     polled_at: datetime | None
 
     model_config = {"from_attributes": True}
