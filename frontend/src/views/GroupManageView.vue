@@ -1,82 +1,168 @@
 <template>
   <div class="page">
     <div class="page-header">
-      <h2>그룹 관리</h2>
+      <div class="page-title">
+        <h2>그룹 관리</h2>
+        <span class="page-subtitle">{{ rows.length }}개 항목</span>
+      </div>
       <div class="actions">
-        <input v-model="search" class="search" placeholder="이름 검색..." />
+        <div class="search-wrap">
+          <span class="search-icon">⌕</span>
+          <input v-model="search" class="search" placeholder="이름 검색..." />
+        </div>
         <button v-if="selected.size > 0" class="btn-danger" @click="bulkDelete">
-          선택 삭제 ({{ selected.size }})
+          삭제 ({{ selected.size }})
         </button>
-        <button v-if="auth.isAdmin" class="btn-primary" @click="openCreate('group')">+ 그룹 추가</button>
+        <button v-if="auth.isAdmin" class="btn-primary" @click="openCreate">＋ 항목 추가</button>
       </div>
     </div>
 
-    <!-- Flat table of all groups/sites/buildings -->
-    <table class="table">
-      <thead>
-        <tr>
-          <th><input type="checkbox" @change="toggleAll" :checked="allSelected" /></th>
-          <th>유형</th>
-          <th>이름</th>
-          <th>상위</th>
-          <th>작업</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-if="rows.length === 0">
-          <td colspan="5" class="empty">항목이 없습니다.</td>
-        </tr>
-        <template v-for="row in rows" :key="`${row.type}-${row.id}`">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
           <tr>
-            <td><input type="checkbox" :checked="selected.has(`${row.type}-${row.id}`)" @change="toggleOne(`${row.type}-${row.id}`)" /></td>
-            <td><span class="type-badge" :class="row.type">{{ TYPE_LABEL[row.type] }}</span></td>
-            <td class="name-cell">
-              <span v-if="editTarget?.key !== `${row.type}-${row.id}`" class="name-text">{{ row.name }}</span>
-              <input v-else v-model="editTarget.name" class="inline-edit" @keyup.enter="saveInlineEdit" @keyup.escape="editTarget = null" @blur="saveInlineEdit" autofocus />
-            </td>
-            <td class="parent-cell">{{ row.parentLabel }}</td>
-            <td class="row-actions">
-              <button v-if="row.type === 'group'" class="btn-sm" @click="openCreate('site', row)">사이트+</button>
-              <button v-if="row.type === 'site'" class="btn-sm" @click="openCreate('building', row)">건물+</button>
-              <button class="btn-sm" @click="startInlineEdit(row)">이름 수정</button>
-              <button class="btn-sm danger" @click="confirmDelete(row)">삭제</button>
-            </td>
+            <th class="th-check"><input type="checkbox" @change="toggleAll" :checked="allSelected" /></th>
+            <th>유형</th>
+            <th>이름</th>
+            <th>상위</th>
           </tr>
-        </template>
-      </tbody>
-    </table>
-
-    <!-- Add Modal -->
-    <div v-if="createModal" class="modal-overlay" @click.self="createModal = null">
-      <div class="modal">
-        <h3>{{ createModal.title }}</h3>
-        <div class="field">
-          <label>이름 *</label>
-          <input v-model="createModal.name" @keyup.enter="submitCreate" autofocus />
-        </div>
-        <div v-if="createModal.type === 'building'" class="field">
-          <label>층수</label>
-          <input v-model.number="createModal.floors" type="number" min="1" />
-        </div>
-        <div class="field" v-if="createModal.type === 'site'">
-          <label>설명</label>
-          <input v-model="createModal.description" />
-        </div>
-        <div v-if="createError" class="error">{{ createError }}</div>
-        <div class="modal-actions">
-          <button @click="submitCreate">추가</button>
-          <button class="cancel" @click="createModal = null">취소</button>
-        </div>
-      </div>
+        </thead>
+        <tbody>
+          <tr v-if="rows.length === 0">
+            <td colspan="4" class="empty">항목이 없습니다.</td>
+          </tr>
+          <tr
+            v-for="row in rows"
+            :key="`${row.type}-${row.id}`"
+            class="data-row"
+            @click="openEdit(row)"
+            @contextmenu.prevent="openCtx($event, row)"
+          >
+            <td class="td-check" @click.stop>
+              <input type="checkbox" :checked="selected.has(`${row.type}-${row.id}`)" @change="toggleOne(`${row.type}-${row.id}`)" />
+            </td>
+            <td><span class="type-badge" :class="row.type">{{ TYPE_LABEL[row.type] }}</span></td>
+            <td class="td-name">{{ row.name }}</td>
+            <td class="td-parent">{{ row.parentLabel }}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
+
+    <!-- Context menu -->
+    <div
+      v-if="ctxMenu"
+      class="ctx-menu"
+      :style="{ top: ctxMenu.y + 'px', left: ctxMenu.x + 'px' }"
+      @click.stop
+    >
+      <button class="ctx-item danger" @click="confirmDelete(ctxMenu.row); ctxMenu = null">삭제</button>
+    </div>
+
+    <!-- Create Drawer -->
+    <DrawerPanel v-model="createOpen" title="항목 추가">
+      <div class="form">
+        <div class="form-field">
+          <label class="form-label">유형</label>
+          <div class="type-tabs">
+            <button
+              v-for="t in ['group', 'site', 'building'] as const"
+              :key="t"
+              class="type-tab"
+              :class="{ active: createForm.type === t }"
+              @click="createForm.type = t; createForm.parentId = null"
+            >{{ TYPE_LABEL[t] }}</button>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">이름 <span class="required">*</span></label>
+          <input v-model="createForm.name" class="form-input" placeholder="이름 입력" />
+        </div>
+
+        <div v-if="createForm.type === 'building'" class="form-field">
+          <label class="form-label">층수</label>
+          <input v-model.number="createForm.floors" class="form-input" type="number" min="1" />
+        </div>
+
+        <div v-if="createForm.type === 'site'" class="form-field">
+          <label class="form-label">상위 그룹 <span class="required">*</span></label>
+          <select v-model="createForm.parentId" class="form-select">
+            <option :value="null" disabled>그룹 선택</option>
+            <option v-for="g in topo.groups" :key="g.id" :value="g.id">{{ g.name }}</option>
+          </select>
+        </div>
+
+        <div v-if="createForm.type === 'building'" class="form-field">
+          <label class="form-label">상위 사이트 <span class="required">*</span></label>
+          <select v-model="createForm.parentId" class="form-select">
+            <option :value="null" disabled>사이트 선택</option>
+            <option v-for="s in allSites" :key="s.id" :value="s.id">
+              {{ s.groupName }} / {{ s.name }}
+            </option>
+          </select>
+        </div>
+
+        <p v-if="createError" class="error-msg">{{ createError }}</p>
+      </div>
+
+      <template #footer>
+        <button class="btn-ghost" @click="createOpen = false">취소</button>
+        <button class="btn-primary" @click="submitCreate" :disabled="createLoading">
+          {{ createLoading ? "추가 중..." : "추가" }}
+        </button>
+      </template>
+    </DrawerPanel>
+
+    <!-- Edit Drawer -->
+    <DrawerPanel v-model="editOpen" :title="`${editForm ? TYPE_LABEL[editForm.type] : ''} 수정`">
+      <div v-if="editForm" class="form">
+        <div class="form-field">
+          <label class="form-label">이름 <span class="required">*</span></label>
+          <input v-model="editForm.name" class="form-input" placeholder="이름" />
+        </div>
+
+        <div v-if="editForm.type === 'building'" class="form-field">
+          <label class="form-label">층수</label>
+          <input v-model.number="editForm.floors" class="form-input" type="number" min="1" />
+        </div>
+
+        <div v-if="editForm.type === 'site'" class="form-field">
+          <label class="form-label">상위 그룹</label>
+          <select v-model="editForm.parentId" class="form-select">
+            <option v-for="g in topo.groups" :key="g.id" :value="g.id">{{ g.name }}</option>
+          </select>
+        </div>
+
+        <div v-if="editForm.type === 'building'" class="form-field">
+          <label class="form-label">상위 사이트</label>
+          <select v-model="editForm.parentId" class="form-select">
+            <option :value="null" disabled>사이트 선택</option>
+            <option v-for="s in allSites" :key="s.id" :value="s.id">
+              {{ s.groupName }} / {{ s.name }}
+            </option>
+          </select>
+        </div>
+
+        <p v-if="editError" class="error-msg">{{ editError }}</p>
+      </div>
+
+      <template #footer>
+        <button class="btn-ghost" @click="editOpen = false">취소</button>
+        <button class="btn-primary" @click="submitEdit" :disabled="editLoading">
+          {{ editLoading ? "저장 중..." : "저장" }}
+        </button>
+      </template>
+    </DrawerPanel>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { useTopologyStore } from "@/stores/topology";
 import api from "@/api/client";
+import DrawerPanel from "@/components/DrawerPanel.vue";
 
 const auth = useAuthStore();
 const topo = useTopologyStore();
@@ -93,23 +179,26 @@ interface Row {
   parentLabel: string;
   parentId?: number;
   groupId?: number;
+  floors?: number;
 }
+
+// All sites flattened (with group name for display)
+const allSites = computed(() =>
+  topo.groups.flatMap((g) => g.sites.map((s) => ({ ...s, groupName: g.name })))
+);
 
 const rows = computed((): Row[] => {
   const q = search.value.toLowerCase();
   const result: Row[] = [];
   for (const g of topo.groups) {
-    if (!q || g.name.toLowerCase().includes(q)) {
+    if (!q || g.name.toLowerCase().includes(q))
       result.push({ type: "group", id: g.id, name: g.name, parentLabel: "—" });
-    }
     for (const s of g.sites) {
-      if (!q || s.name.toLowerCase().includes(q)) {
+      if (!q || s.name.toLowerCase().includes(q))
         result.push({ type: "site", id: s.id, name: s.name, parentLabel: g.name, parentId: g.id });
-      }
       for (const b of s.buildings) {
-        if (!q || b.name.toLowerCase().includes(q)) {
-          result.push({ type: "building", id: b.id, name: b.name, parentLabel: `${g.name} / ${s.name}`, parentId: s.id });
-        }
+        if (!q || b.name.toLowerCase().includes(q))
+          result.push({ type: "building", id: b.id, name: b.name, parentLabel: `${g.name} / ${s.name}`, parentId: s.id, groupId: g.id, floors: b.floors });
       }
     }
   }
@@ -127,49 +216,84 @@ function toggleOne(key: string) {
   selected.value.has(key) ? selected.value.delete(key) : selected.value.add(key);
 }
 
-// Inline edit
-interface EditTarget { key: string; type: string; id: number; name: string }
-const editTarget = ref<EditTarget | null>(null);
+// Context menu
+interface CtxMenu { x: number; y: number; row: Row }
+const ctxMenu = ref<CtxMenu | null>(null);
+function openCtx(e: MouseEvent, row: Row) { ctxMenu.value = { x: e.clientX, y: e.clientY, row }; }
+function closeCtx() { ctxMenu.value = null; }
+onMounted(() => document.addEventListener("click", closeCtx));
+onUnmounted(() => document.removeEventListener("click", closeCtx));
 
-function startInlineEdit(row: Row) {
-  editTarget.value = { key: `${row.type}-${row.id}`, type: row.type, id: row.id, name: row.name };
-}
-
-async function saveInlineEdit() {
-  if (!editTarget.value || !editTarget.value.name.trim()) { editTarget.value = null; return; }
-  const { type, id, name } = editTarget.value;
-  try {
-    if (type === "group") await api.patch(`/groups/${id}`, { name });
-    else if (type === "site") await api.patch(`/sites/${id}`, { name });
-    else await api.patch(`/buildings/${id}`, { name });
-    await topo.fetchGroups();
-  } finally {
-    editTarget.value = null;
-  }
-}
-
-// Create modal
-interface CreateModal { type: "group" | "site" | "building"; title: string; name: string; description: string; floors: number; parentId?: number }
-const createModal = ref<CreateModal | null>(null);
+// Create drawer
+interface CreateForm { type: "group" | "site" | "building"; name: string; floors: number; parentId: number | null }
+const createOpen = ref(false);
+const createForm = ref<CreateForm>({ type: "group", name: "", floors: 1, parentId: null });
 const createError = ref("");
+const createLoading = ref(false);
 
-function openCreate(type: "group" | "site" | "building", parent?: Row) {
-  const titles = { group: "그룹 추가", site: `사이트 추가 — ${parent?.name}`, building: `건물 추가 — ${parent?.name}` };
-  createModal.value = { type, title: titles[type], name: "", description: "", floors: 1, parentId: parent?.id };
+function openCreate() {
+  createForm.value = { type: "group", name: "", floors: 1, parentId: null };
   createError.value = "";
+  createOpen.value = true;
 }
 
 async function submitCreate() {
-  if (!createModal.value?.name.trim()) { createError.value = "이름을 입력하세요."; return; }
+  const f = createForm.value;
+  if (!f.name.trim()) { createError.value = "이름을 입력하세요."; return; }
+  if (f.type === "site" && !f.parentId) { createError.value = "상위 그룹을 선택하세요."; return; }
+  if (f.type === "building" && !f.parentId) { createError.value = "상위 사이트를 선택하세요."; return; }
+  createLoading.value = true;
+  createError.value = "";
   try {
-    const { type, name, description, floors, parentId } = createModal.value;
-    if (type === "group") await topo.createGroup(name, description);
-    else if (type === "site") await topo.createSite(parentId!, name, description);
-    else await topo.createBuilding(parentId!, name, floors);
+    if (f.type === "group") await topo.createGroup(f.name);
+    else if (f.type === "site") await topo.createSite(f.parentId!, f.name);
+    else await topo.createBuilding(f.parentId!, f.name, f.floors);
     await topo.fetchGroups();
-    createModal.value = null;
+    createOpen.value = false;
   } catch (e: any) {
     createError.value = e.response?.data?.detail || "오류가 발생했습니다.";
+  } finally {
+    createLoading.value = false;
+  }
+}
+
+// Edit drawer
+interface EditForm { type: "group" | "site" | "building"; id: number; name: string; parentId: number | null; floors: number }
+const editOpen = ref(false);
+const editForm = ref<EditForm | null>(null);
+const editError = ref("");
+const editLoading = ref(false);
+
+function openEdit(row: Row) {
+  editForm.value = {
+    type: row.type, id: row.id, name: row.name,
+    parentId: row.parentId ?? null,
+    floors: row.floors ?? 1,
+  };
+  editError.value = "";
+  editOpen.value = true;
+}
+
+async function submitEdit() {
+  if (!editForm.value) return;
+  const f = editForm.value;
+  if (!f.name.trim()) { editError.value = "이름을 입력하세요."; return; }
+  editLoading.value = true;
+  editError.value = "";
+  try {
+    if (f.type === "group") {
+      await api.patch(`/groups/${f.id}`, { name: f.name });
+    } else if (f.type === "site") {
+      await api.patch(`/sites/${f.id}`, { name: f.name, group_id: f.parentId });
+    } else {
+      await api.patch(`/buildings/${f.id}`, { name: f.name, floors: f.floors, site_id: f.parentId });
+    }
+    await topo.fetchGroups();
+    editOpen.value = false;
+  } catch (e: any) {
+    editError.value = e.response?.data?.detail || "오류가 발생했습니다.";
+  } finally {
+    editLoading.value = false;
   }
 }
 
@@ -198,41 +322,132 @@ onMounted(() => topo.fetchGroups());
 </script>
 
 <style scoped>
-.page { max-width: 900px; }
-.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
-.page-header h2 { font-size: 1.15rem; font-weight: 700; }
-.actions { display: flex; gap: 0.6rem; align-items: center; }
-.search { padding: 0.45rem 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.9rem; width: 180px; outline: none; }
-.search:focus { border-color: #4299e1; }
-.btn-primary { padding: 0.45rem 1rem; background: #4299e1; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500; }
-.btn-danger { padding: 0.45rem 1rem; background: #e53e3e; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
-.table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-.table th { background: #f7fafc; padding: 0.75rem 1rem; text-align: left; font-size: 0.82rem; color: #4a5568; font-weight: 600; border-bottom: 1px solid #e2e8f0; }
-.table td { padding: 0.7rem 1rem; border-bottom: 1px solid #f0f4f8; font-size: 0.9rem; }
+/* ── Layout ─────────────────────────────────────────────── */
+.page { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+
+.page-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1.25rem; padding-bottom: 1rem;
+  border-bottom: 1px solid #dce1e7;
+}
+.page-title { display: flex; align-items: baseline; gap: 0.75rem; }
+.page-title h2 { font-size: 1.1rem; font-weight: 600; color: #182026; margin: 0; }
+.page-subtitle { font-size: 0.78rem; color: #738694; }
+
+.actions { display: flex; gap: 0.5rem; align-items: center; }
+
+/* ── Search ─────────────────────────────────────────────── */
+.search-wrap { position: relative; }
+.search-icon {
+  position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%);
+  color: #738694; font-size: 1rem; pointer-events: none;
+}
+.search {
+  padding: 0.4rem 0.75rem 0.4rem 2rem; border: 1px solid #c5cdd4;
+  border-radius: 2px; font-size: 0.85rem; width: 200px;
+  background: #fff; color: #182026; outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.search:focus { border-color: #1d6fa4; box-shadow: 0 0 0 2px rgba(29,111,164,0.18); }
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.btn-primary {
+  padding: 0.4rem 0.9rem; background: #1d6fa4; color: #fff;
+  border: none; border-radius: 2px; cursor: pointer; font-size: 0.85rem;
+  font-weight: 500; letter-spacing: 0.01em; transition: background 0.15s;
+}
+.btn-primary:hover { background: #1a5f8e; }
+.btn-primary:disabled { background: #8cbbda; cursor: not-allowed; }
+
+.btn-danger {
+  padding: 0.4rem 0.9rem; background: #c23030; color: #fff;
+  border: none; border-radius: 2px; cursor: pointer; font-size: 0.85rem;
+  transition: background 0.15s;
+}
+.btn-danger:hover { background: #a82828; }
+
+.btn-ghost {
+  padding: 0.4rem 0.9rem; background: transparent; color: #4a6074;
+  border: 1px solid #c5cdd4; border-radius: 2px; cursor: pointer; font-size: 0.85rem;
+  transition: background 0.15s;
+}
+.btn-ghost:hover { background: #ebf1f5; }
+
+/* ── Table ─────────────────────────────────────────────── */
+.table-wrap {
+  background: #fff; border: 1px solid #dce1e7;
+  border-radius: 2px; overflow: hidden;
+}
+.table { width: 100%; border-collapse: collapse; }
+.table thead { background: #ebf1f5; }
+.table th {
+  padding: 0.6rem 1rem; text-align: left;
+  font-size: 0.72rem; font-weight: 600; color: #5c7080;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  border-bottom: 1px solid #dce1e7;
+}
+.th-check { width: 36px; padding: 0.6rem 0 0.6rem 1rem; }
+.table td { padding: 0.65rem 1rem; border-bottom: 1px solid #ebf1f5; font-size: 0.875rem; color: #182026; }
 .table tr:last-child td { border-bottom: none; }
-.empty { text-align: center; color: #a0aec0; padding: 2rem !important; }
-.type-badge { padding: 0.15rem 0.5rem; border-radius: 10px; font-size: 0.78rem; font-weight: 600; }
-.type-badge.group { background: #e0e7ff; color: #3730a3; }
-.type-badge.site { background: #d1fae5; color: #065f46; }
-.type-badge.building { background: #fef3c7; color: #92400e; }
-.name-cell { min-width: 180px; }
-.name-text { cursor: default; }
-.inline-edit { width: 100%; padding: 0.3rem 0.5rem; border: 1px solid #4299e1; border-radius: 4px; font-size: 0.9rem; outline: none; }
-.parent-cell { color: #718096; font-size: 0.85rem; }
-.row-actions { display: flex; gap: 0.35rem; flex-wrap: wrap; }
-.btn-sm { padding: 0.25rem 0.55rem; border: 1px solid #e2e8f0; border-radius: 4px; cursor: pointer; font-size: 0.78rem; background: white; white-space: nowrap; }
-.btn-sm:hover { background: #f7fafc; }
-.btn-sm.danger { border-color: #fed7d7; color: #e53e3e; }
-.btn-sm.danger:hover { background: #fff5f5; }
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 300; }
-.modal { background: white; border-radius: 10px; padding: 1.75rem; width: 360px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
-.modal h3 { font-size: 1rem; font-weight: 700; margin-bottom: 1.25rem; }
-.field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.75rem; }
-.field label { font-size: 0.82rem; font-weight: 500; color: #4a5568; }
-.field input { padding: 0.5rem 0.7rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.9rem; outline: none; }
-.field input:focus { border-color: #4299e1; }
-.error { color: #e53e3e; font-size: 0.85rem; margin-top: 0.25rem; }
-.modal-actions { display: flex; gap: 0.5rem; margin-top: 1.25rem; justify-content: flex-end; }
-.modal-actions button { padding: 0.45rem 1.1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; background: #4299e1; color: white; font-weight: 500; }
-.modal-actions button.cancel { background: #e2e8f0; color: #4a5568; }
+.empty { text-align: center; color: #8fafc4; padding: 2.5rem !important; font-size: 0.875rem; }
+
+.td-check { width: 36px; padding: 0.65rem 0 0.65rem 1rem; }
+.td-name { font-weight: 500; }
+.td-parent { color: #5c7080; font-size: 0.84rem; }
+
+.data-row { cursor: pointer; transition: background 0.1s; }
+.data-row:hover td { background: #f5f8fa; }
+
+/* ── Type badges ─────────────────────────────────────────── */
+.type-badge {
+  display: inline-block; padding: 0.1rem 0.45rem;
+  border-radius: 2px; font-size: 0.72rem; font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.type-badge.group { background: #dce9f7; color: #1d4e78; }
+.type-badge.site  { background: #d4edda; color: #155724; }
+.type-badge.building { background: #fef3cd; color: #856404; }
+
+/* ── Context menu ─────────────────────────────────────────── */
+.ctx-menu {
+  position: fixed; background: #fff; border: 1px solid #c5cdd4;
+  border-radius: 2px; box-shadow: 0 4px 16px rgba(0,0,0,0.14);
+  z-index: 500; min-width: 110px; overflow: hidden;
+}
+.ctx-item {
+  display: block; width: 100%; padding: 0.55rem 1rem;
+  background: none; border: none; text-align: left;
+  font-size: 0.85rem; cursor: pointer; color: #182026;
+}
+.ctx-item:hover { background: #f5f8fa; }
+.ctx-item.danger { color: #c23030; }
+.ctx-item.danger:hover { background: #fdf0f0; }
+
+/* ── Drawer form ─────────────────────────────────────────── */
+.form { display: flex; flex-direction: column; gap: 1rem; }
+.form-field { display: flex; flex-direction: column; gap: 0.35rem; }
+.form-label { font-size: 0.78rem; font-weight: 600; color: #5c7080; text-transform: uppercase; letter-spacing: 0.05em; }
+.required { color: #c23030; }
+
+.form-input, .form-select {
+  padding: 0.45rem 0.7rem; border: 1px solid #c5cdd4;
+  border-radius: 2px; font-size: 0.875rem; color: #182026;
+  background: #fff; outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+  width: 100%;
+}
+.form-input:focus, .form-select:focus {
+  border-color: #1d6fa4; box-shadow: 0 0 0 2px rgba(29,111,164,0.18);
+}
+
+.type-tabs { display: flex; gap: 0; border: 1px solid #c5cdd4; border-radius: 2px; overflow: hidden; }
+.type-tab {
+  flex: 1; padding: 0.4rem 0.6rem; border: none;
+  background: #fff; cursor: pointer; font-size: 0.84rem; color: #5c7080;
+  border-right: 1px solid #c5cdd4; transition: background 0.12s, color 0.12s;
+}
+.type-tab:last-child { border-right: none; }
+.type-tab.active { background: #1d6fa4; color: #fff; font-weight: 600; }
+.type-tab:not(.active):hover { background: #ebf1f5; }
+
+.error-msg { color: #c23030; font-size: 0.82rem; margin: 0; }
 </style>
