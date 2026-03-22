@@ -446,14 +446,14 @@ h2 { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); text-trans
 .header-actions { display: flex; gap: 0.5rem; align-items: center; }
 .search {
   padding: 0.4rem 0.7rem; border: 1px solid var(--border-input); border-radius: 2px;
-  font-size: 0.87rem; width: 180px; outline: none;
+  font-size: 0.87rem; width: 180px; outline: revert;
   color: var(--text-primary); background: var(--bg-input);
 }
-.search:focus { border-color: var(--accent-primary); }
+.search:focus { border-color: var(--accent-primary); outline: none; }
 .search::placeholder { color: var(--text-muted); }
 .filter-select {
   padding: 0.4rem 0.7rem; border: 1px solid var(--border-input); border-radius: 2px;
-  font-size: 0.87rem; background: var(--bg-input); color: var(--text-primary); outline: none;
+  font-size: 0.87rem; background: var(--bg-input); color: var(--text-primary);
 }
 .btn-refresh {
   padding: 0.4rem 0.65rem; background: var(--bg-elevated); border: 1px solid var(--border-input);
