@@ -10,8 +10,23 @@
     <div v-for="group in groups" :key="group.id" class="group">
       <div class="group-header" @click="toggleGroup(group.id)">
         <span class="arrow">{{ expanded.groups.has(group.id) ? "▼" : "▶" }}</span>
-        <span class="label">{{ group.name }}</span>
-        <button v-if="auth.isAdmin" class="btn-small" @click.stop="addSite(group)" title="사이트 추가">+</button>
+        <template v-if="editTarget?.type === 'group' && editTarget.id === group.id">
+          <input
+            v-model="editName"
+            class="inline-edit"
+            @keyup.enter="saveEdit"
+            @keyup.escape="editTarget = null"
+            @blur="saveEdit"
+            @click.stop
+            autofocus
+          />
+        </template>
+        <span v-else class="label">{{ group.name }}</span>
+        <div class="row-btns" @click.stop>
+          <button v-if="auth.isAdmin" class="btn-small" @click="addSite(group)" title="사이트 추가">+</button>
+          <button v-if="auth.isAdmin" class="btn-icon" @click="startEdit('group', group.id, group.name)" title="이름 수정">✎</button>
+          <button v-if="auth.isAdmin" class="btn-icon danger" @click="deleteNode('group', group.id, group.name)" title="삭제">✕</button>
+        </div>
       </div>
 
       <div v-if="expanded.groups.has(group.id)">
@@ -24,8 +39,23 @@
             <span class="arrow" @click.stop="toggleSite(site.id)">
               {{ expanded.sites.has(site.id) ? "▼" : "▶" }}
             </span>
-            <span class="label">{{ site.name }}</span>
-            <button v-if="auth.isAdmin" class="btn-small" @click.stop="addBuilding(site)" title="건물 추가">+</button>
+            <template v-if="editTarget?.type === 'site' && editTarget.id === site.id">
+              <input
+                v-model="editName"
+                class="inline-edit"
+                @keyup.enter="saveEdit"
+                @keyup.escape="editTarget = null"
+                @blur="saveEdit"
+                @click.stop
+                autofocus
+              />
+            </template>
+            <span v-else class="label">{{ site.name }}</span>
+            <div class="row-btns" @click.stop>
+              <button v-if="auth.isAdmin" class="btn-small" @click="addBuilding(site)" title="건물 추가">+</button>
+              <button v-if="auth.isAdmin" class="btn-icon" @click="startEdit('site', site.id, site.name)" title="이름 수정">✎</button>
+              <button v-if="auth.isAdmin" class="btn-icon danger" @click="deleteNode('site', site.id, site.name)" title="삭제">✕</button>
+            </div>
           </div>
 
           <div v-if="expanded.sites.has(site.id)">
@@ -36,8 +66,23 @@
               :class="{ active: selectedBuildingId === building.id }"
               @click="selectBuilding(building, site)"
             >
-              <span class="label">{{ building.name }}</span>
+              <template v-if="editTarget?.type === 'building' && editTarget.id === building.id">
+                <input
+                  v-model="editName"
+                  class="inline-edit"
+                  @keyup.enter="saveEdit"
+                  @keyup.escape="editTarget = null"
+                  @blur="saveEdit"
+                  @click.stop
+                  autofocus
+                />
+              </template>
+              <span v-else class="label">{{ building.name }}</span>
               <span class="count">{{ building.device_count }}</span>
+              <div class="row-btns building-btns" @click.stop>
+                <button v-if="auth.isAdmin" class="btn-icon" @click="startEdit('building', building.id, building.name)" title="이름 수정">✎</button>
+                <button v-if="auth.isAdmin" class="btn-icon danger" @click="deleteNode('building', building.id, building.name)" title="삭제">✕</button>
+              </div>
             </div>
           </div>
         </div>
@@ -87,6 +132,7 @@
 import { ref, computed, reactive } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { useTopologyStore, type Group, type Site } from "@/stores/topology";
+import api from "@/api/client";
 
 const emit = defineEmits<{
   (e: "select", payload: { siteId?: number; buildingId?: number }): void;
@@ -107,6 +153,38 @@ const addSiteTarget = ref<Group | null>(null);
 const addBuildingTarget = ref<{ site: Site } | null>(null);
 const newName = ref("");
 const newFloors = ref(1);
+
+// Inline edit
+interface EditTarget { type: "group" | "site" | "building"; id: number }
+const editTarget = ref<EditTarget | null>(null);
+const editName = ref("");
+
+function startEdit(type: "group" | "site" | "building", id: number, name: string) {
+  editTarget.value = { type, id };
+  editName.value = name;
+}
+
+async function saveEdit() {
+  if (!editTarget.value || !editName.value.trim()) { editTarget.value = null; return; }
+  const { type, id } = editTarget.value;
+  const name = editName.value.trim();
+  try {
+    if (type === "group") await api.patch(`/groups/${id}`, { name });
+    else if (type === "site") await api.patch(`/sites/${id}`, { name });
+    else await api.patch(`/buildings/${id}`, { name });
+    await topologyStore.fetchGroups();
+  } finally {
+    editTarget.value = null;
+  }
+}
+
+async function deleteNode(type: "group" | "site" | "building", id: number, name: string) {
+  if (!confirm(`"${name}"을(를) 삭제하시겠습니까? 하위 항목도 모두 삭제됩니다.`)) return;
+  if (type === "group") await topologyStore.deleteGroup(id);
+  else if (type === "site") await topologyStore.deleteSite(id);
+  else await topologyStore.deleteBuilding(id);
+  await topologyStore.fetchGroups();
+}
 
 function toggleGroup(id: number) {
   expanded.groups.has(id) ? expanded.groups.delete(id) : expanded.groups.add(id);
@@ -140,7 +218,7 @@ async function createGroup() {
 
 async function createSite() {
   if (!addSiteTarget.value || !newName.value.trim()) return;
-  const site = await topologyStore.createSite(addSiteTarget.value.id, newName.value.trim());
+  await topologyStore.createSite(addSiteTarget.value.id, newName.value.trim());
   expanded.groups.add(addSiteTarget.value.id);
   addSiteTarget.value = null;
   newName.value = "";
@@ -167,30 +245,46 @@ async function createBuilding() {
 }
 .group-header, .site-header {
   display: flex; align-items: center; gap: 0.4rem;
-  padding: 0.45rem 1rem; cursor: pointer; user-select: none;
+  padding: 0.45rem 0.5rem 0.45rem 1rem; cursor: pointer; user-select: none;
 }
 .group-header:hover, .site-header:hover { background: #f7fafc; }
 .site-header.active { background: #ebf8ff; color: #2b6cb0; }
 .arrow { font-size: 0.65rem; color: #a0aec0; min-width: 12px; }
 .label { flex: 1; font-size: 0.9rem; }
 .group-header .label { font-weight: 600; }
+.row-btns { display: flex; gap: 2px; align-items: center; opacity: 0; transition: opacity 0.1s; }
+.group-header:hover .row-btns,
+.site-header:hover .row-btns { opacity: 1; }
+.building:hover .building-btns { opacity: 1; }
 .btn-small {
   background: none; border: 1px solid #e2e8f0; border-radius: 3px;
   width: 18px; height: 18px; cursor: pointer; font-size: 0.8rem; color: #718096;
   display: flex; align-items: center; justify-content: center;
 }
 .btn-small:hover { background: #ebf8ff; border-color: #4299e1; color: #4299e1; }
+.btn-icon {
+  background: none; border: none; cursor: pointer; font-size: 0.75rem;
+  color: #a0aec0; padding: 2px 3px; border-radius: 3px;
+}
+.btn-icon:hover { background: #f7fafc; color: #4a5568; }
+.btn-icon.danger:hover { background: #fff5f5; color: #e53e3e; }
+.inline-edit {
+  flex: 1; padding: 0.15rem 0.4rem; border: 1px solid #4299e1;
+  border-radius: 3px; font-size: 0.9rem; outline: none;
+}
 .site { padding-left: 1rem; }
 .building {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 0.35rem 1rem 0.35rem 1.5rem; cursor: pointer; font-size: 0.875rem;
+  display: flex; align-items: center; gap: 0.3rem;
+  padding: 0.35rem 0.5rem 0.35rem 1.5rem; cursor: pointer; font-size: 0.875rem;
 }
 .building:hover { background: #f7fafc; }
 .building.active { background: #ebf8ff; color: #2b6cb0; font-weight: 500; }
+.building .label { flex: 1; }
 .count {
   background: #e2e8f0; color: #4a5568; border-radius: 10px;
   padding: 0.1rem 0.5rem; font-size: 0.75rem;
 }
+.building-btns { opacity: 0; transition: opacity 0.1s; }
 .loading { padding: 1rem; color: #718096; font-size: 0.9rem; text-align: center; }
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.4);
@@ -203,7 +297,7 @@ async function createBuilding() {
 .modal h3 { margin-bottom: 1rem; font-size: 1rem; }
 .modal input {
   width: 100%; padding: 0.5rem 0.7rem; border: 1px solid #e2e8f0;
-  border-radius: 6px; font-size: 0.9rem; outline: none;
+  border-radius: 6px; font-size: 0.9rem; outline: none; box-sizing: border-box;
 }
 .modal input:focus { border-color: #4299e1; }
 .modal-actions { display: flex; gap: 0.5rem; margin-top: 1rem; justify-content: flex-end; }
