@@ -41,5 +41,5 @@ class User(Base):
 
     # Groups this user has access to (empty list = access to all groups)
     accessible_groups: Mapped[list] = relationship(
-        "Group", secondary=user_group_access, lazy="selectin"
+        "Group", secondary=user_group_access, lazy="selectin", uselist=True
     )

@@ -147,7 +147,7 @@ async def get_user_groups(
     if not target:
         raise HTTPException(status_code=404, detail="User not found")
     _check_can_manage(current_user, target.role)
-    return {"group_ids": [g.id for g in target.accessible_groups]}
+    return {"group_ids": [g.id for g in (target.accessible_groups or [])]}
 
 
 @router.put("/{user_id}/groups", status_code=status.HTTP_204_NO_CONTENT)
