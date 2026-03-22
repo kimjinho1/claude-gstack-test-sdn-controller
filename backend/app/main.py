@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import alarms, auth, devices, topology
+from app.api import alarms, auth, devices, topology, users
 from app.core.config import settings
 from app.core.database import engine
 from app.core.security import hash_password
@@ -68,6 +68,7 @@ app.include_router(auth.router)
 app.include_router(topology.router)
 app.include_router(devices.router)
 app.include_router(alarms.router)
+app.include_router(users.router)
 
 
 @app.get("/health")

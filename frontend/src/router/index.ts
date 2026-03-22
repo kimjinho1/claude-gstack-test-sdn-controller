@@ -11,6 +11,8 @@ const router = createRouter({
       component: () => import("@/views/DashboardLayout.vue"),
       children: [
         { path: "", redirect: "/devices" },
+        { path: "users", name: "Users", component: () => import("@/views/UsersView.vue") },
+        { path: "groups-manage", name: "GroupManage", component: () => import("@/views/GroupManageView.vue") },
         { path: "devices", name: "Devices", component: () => import("@/views/DevicesView.vue") },
         { path: "devices/:id", name: "DeviceDetail", component: () => import("@/views/DeviceDetailView.vue") },
         { path: "alarms", name: "Alarms", component: () => import("@/views/AlarmsView.vue") },

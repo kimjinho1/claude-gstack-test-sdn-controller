@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -15,6 +16,10 @@ from app.schemas.topology import (
     GroupCreate, GroupResponse, GroupUpdate,
     SiteCreate, SiteResponse, SiteUpdate,
 )
+
+
+class BulkDeleteRequest(BaseModel):
+    ids: list[int]
 
 router = APIRouter(tags=["topology"])
 
@@ -213,3 +218,39 @@ async def get_building_devices(
     result = await db.execute(query)
     devices = result.scalars().all()
     return [DeviceResponse.model_validate(d) for d in devices]
+
+
+@router.post("/groups/bulk-delete", status_code=status.HTTP_204_NO_CONTENT)
+async def bulk_delete_groups(
+    body: BulkDeleteRequest,
+    _: Annotated[User, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    result = await db.execute(select(Group).where(Group.id.in_(body.ids)))
+    for group in result.scalars().all():
+        await db.delete(group)
+    await db.commit()
+
+
+@router.post("/sites/bulk-delete", status_code=status.HTTP_204_NO_CONTENT)
+async def bulk_delete_sites(
+    body: BulkDeleteRequest,
+    _: Annotated[User, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    result = await db.execute(select(Site).where(Site.id.in_(body.ids)))
+    for site in result.scalars().all():
+        await db.delete(site)
+    await db.commit()
+
+
+@router.post("/buildings/bulk-delete", status_code=status.HTTP_204_NO_CONTENT)
+async def bulk_delete_buildings(
+    body: BulkDeleteRequest,
+    _: Annotated[User, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    result = await db.execute(select(Building).where(Building.id.in_(body.ids)))
+    for building in result.scalars().all():
+        await db.delete(building)
+    await db.commit()

@@ -17,7 +17,14 @@
     <div class="body">
       <!-- Sidebar -->
       <aside class="sidebar">
-        <TopologyTree @select="onTreeSelect" />
+        <!-- Navigation Tabs -->
+        <nav class="sidenav">
+          <RouterLink v-if="auth.isAdmin" to="/users" class="nav-item" :class="{ active: route.path === '/users' }">사용자 관리</RouterLink>
+          <RouterLink v-if="auth.isAdmin" to="/groups-manage" class="nav-item" :class="{ active: route.path === '/groups-manage' }">그룹 관리</RouterLink>
+          <RouterLink to="/devices" class="nav-item" :class="{ active: route.path.startsWith('/devices') }">장비 관리</RouterLink>
+        </nav>
+        <!-- Topology Tree (only on devices section) -->
+        <TopologyTree v-if="route.path.startsWith('/devices')" @select="onTreeSelect" />
       </aside>
 
       <!-- Main Content -->
@@ -30,7 +37,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
-import { RouterView, RouterLink, useRouter } from "vue-router";
+import { RouterView, RouterLink, useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useAlarmStore } from "@/stores/alarm";
 import { useTopologyStore } from "@/stores/topology";
@@ -40,6 +47,7 @@ const auth = useAuthStore();
 const alarmStore = useAlarmStore();
 const topologyStore = useTopologyStore();
 const router = useRouter();
+const route = useRoute();
 
 const selectedSiteId = ref<number | undefined>();
 const selectedBuildingId = ref<number | undefined>();
@@ -87,5 +95,12 @@ onUnmounted(() => {
 .logout-btn:hover { border-color: #a0aec0; color: white; }
 .body { display: flex; flex: 1; }
 .sidebar { width: 260px; background: white; border-right: 1px solid #e2e8f0; overflow-y: auto; flex-shrink: 0; }
+.sidenav { display: flex; flex-direction: column; border-bottom: 1px solid #e2e8f0; padding: 0.5rem 0; }
+.nav-item {
+  display: block; padding: 0.6rem 1rem; font-size: 0.9rem; color: #4a5568;
+  text-decoration: none; transition: background 0.1s;
+}
+.nav-item:hover { background: #f7fafc; color: #2d3748; }
+.nav-item.active { background: #ebf8ff; color: #2b6cb0; font-weight: 600; border-left: 3px solid #4299e1; }
 .content { flex: 1; padding: 1.5rem; overflow-y: auto; }
 </style>
