@@ -1,69 +1,60 @@
 <template>
   <div class="vlan-wrap">
-    <!-- VLAN list -->
-    <div class="section-title">VLAN 목록</div>
-    <table class="data-table">
-      <thead>
-        <tr><th>VLAN ID</th><th>이름</th></tr>
-      </thead>
-      <tbody>
-        <tr v-if="vlans.length === 0">
-          <td colspan="2" class="empty">VLAN 정보 없음</td>
-        </tr>
-        <tr v-for="v in vlans" :key="v.id">
-          <td class="mono vlan-id-cell">
-            <span class="vlan-badge">{{ v.vlan_id }}</span>
-          </td>
-          <td>{{ v.vlan_name || "—" }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <div v-if="switchPorts.length === 0" class="empty">VLAN 포트 정보 없음</div>
+    <div v-else class="boxmap-scroll">
+      <table class="boxmap">
+        <thead>
+          <tr>
+            <th class="corner"></th>
+            <th v-for="p in switchPorts" :key="p.port_name" class="col-head">
+              <div class="port-name-wrap">
+                <span class="port-name-txt">{{ shortName(p.port_name) }}</span>
+              </div>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Mode row -->
+          <tr class="row-meta">
+            <td class="row-label">Mode</td>
+            <td v-for="p in switchPorts" :key="p.port_name" class="cell">
+              <span class="badge-mode" :class="p.vlan_mode === 'access' ? 'acc' : 'trk'">
+                {{ p.vlan_mode === 'access' ? 'A' : 'T' }}
+              </span>
+            </td>
+          </tr>
+          <!-- PVID row -->
+          <tr class="row-meta row-pvid">
+            <td class="row-label">PVID</td>
+            <td v-for="p in switchPorts" :key="p.port_name" class="cell">
+              <span class="pvid-val">{{ p.vlan_mode === 'access' ? (p.vlan_id || '—') : (p.pvid || '—') }}</span>
+            </td>
+          </tr>
+          <!-- VLAN ID rows -->
+          <tr v-for="vid in allVlanIds" :key="vid" class="row-vlan">
+            <td class="row-label">
+              <span class="vid-pill">{{ vid }}</span>
+              <span v-if="vlanNameMap[vid]" class="vname">{{ vlanNameMap[vid] }}</span>
+            </td>
+            <td v-for="p in switchPorts" :key="p.port_name" class="cell">
+              <span v-if="cellType(p, vid) === 'A'" class="cell-a">A</span>
+              <span v-else-if="cellType(p, vid) === 'U'" class="cell-u">U</span>
+              <span v-else-if="cellType(p, vid) === 'T'" class="cell-t">T</span>
+              <span v-else class="cell-empty">·</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-    <!-- Per-port VLAN assignment -->
-    <div class="section-title" style="margin-top: 1.5rem;">포트별 VLAN 할당</div>
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>포트</th>
-          <th>모드</th>
-          <th>Access VLAN / Native</th>
-          <th>Tagged VLANs</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-if="portsWithVlan.length === 0">
-          <td colspan="4" class="empty">VLAN 할당 정보 없음</td>
-        </tr>
-        <tr v-for="p in portsWithVlan" :key="p.id">
-          <td class="mono">{{ p.port_name }}</td>
-          <td>
-            <span class="mode-badge" :class="p.vlan_mode === 'access' ? 'mode-access' : 'mode-trunk'">
-              {{ p.vlan_mode?.toUpperCase() }}
-            </span>
-          </td>
-          <td class="mono">
-            <span v-if="p.vlan_mode === 'access'">
-              <span class="vlan-badge">{{ p.vlan_id || "—" }}</span>
-              <span class="vlan-name">{{ vlanName(p.vlan_id) }}</span>
-            </span>
-            <span v-else-if="p.vlan_mode === 'trunk'">
-              <span class="vlan-badge">{{ p.pvid || "—" }}</span>
-              <span class="vlan-name">{{ vlanName(p.pvid) }}</span>
-            </span>
-          </td>
-          <td>
-            <span v-if="p.tagged_vlans" class="tagged-vlans">
-              <span
-                v-for="vid in p.tagged_vlans.split(',')"
-                :key="vid"
-                class="vlan-badge vlan-badge-sm"
-              >{{ vid.trim() }}</span>
-            </span>
-            <span v-else class="txt-muted">—</span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <!-- Legend -->
+    <div v-if="switchPorts.length > 0" class="legend">
+      <span class="leg"><span class="cell-a cell-sm">A</span>Access</span>
+      <span class="leg"><span class="cell-u cell-sm">U</span>Native</span>
+      <span class="leg"><span class="cell-t cell-sm">T</span>Tagged</span>
+      <span class="leg"><span class="badge-mode acc">A</span>Access mode</span>
+      <span class="leg"><span class="badge-mode trk">T</span>Trunk mode</span>
+    </div>
   </div>
 </template>
 
@@ -75,7 +66,8 @@ const props = defineProps<{
   ports: any[];
 }>();
 
-// Build vlan_id → name lookup
+const switchPorts = computed(() => props.ports.filter((p) => p.vlan_mode));
+
 const vlanNameMap = computed(() => {
   const m: Record<string, string> = {};
   for (const v of props.vlans) {
@@ -84,65 +76,209 @@ const vlanNameMap = computed(() => {
   return m;
 });
 
-function vlanName(vid: string | null | undefined): string {
-  if (!vid) return "";
-  const name = vlanNameMap.value[vid];
-  return name ? ` (${name})` : "";
+const allVlanIds = computed(() => {
+  const ids = new Set<string>();
+  for (const p of switchPorts.value) {
+    if (p.vlan_mode === "access" && p.vlan_id) {
+      ids.add(String(p.vlan_id));
+    } else if (p.vlan_mode === "trunk") {
+      if (p.pvid) ids.add(String(p.pvid));
+      if (p.tagged_vlans) {
+        p.tagged_vlans.split(",").forEach((v: string) => {
+          const t = v.trim();
+          if (t) ids.add(t);
+        });
+      }
+    }
+  }
+  return [...ids].sort((a, b) => parseInt(a) - parseInt(b));
+});
+
+function cellType(port: any, vid: string): "A" | "U" | "T" | null {
+  if (port.vlan_mode === "access") {
+    return String(port.vlan_id) === vid ? "A" : null;
+  }
+  if (port.vlan_mode === "trunk") {
+    if (String(port.pvid) === vid) return "U";
+    if (port.tagged_vlans) {
+      const tagged = port.tagged_vlans.split(",").map((v: string) => v.trim());
+      if (tagged.includes(vid)) return "T";
+    }
+  }
+  return null;
 }
 
-// Only show ports that have VLAN info
-const portsWithVlan = computed(() =>
-  props.ports.filter((p) => p.vlan_mode)
-);
+// Extract only the numeric/slash part after the interface type name
+function shortName(name: string): string {
+  const m = name.match(/(\d[\d/.]*)$/);
+  return m ? m[1] : name;
+}
 </script>
 
 <style scoped>
-.vlan-wrap { display: flex; flex-direction: column; gap: 0; }
-.section-title { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+.vlan-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
 
-.data-table { width: 100%; border-collapse: collapse; }
-.data-table th {
-  padding: 0.55rem 0.75rem;
-  text-align: left;
+/* Scrollable map area */
+.boxmap-scroll {
+  overflow-x: auto;
+  overflow-y: visible;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+}
+
+/* Table */
+.boxmap {
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+/* Corner (top-left blank) */
+.corner {
+  width: 80px;
+  min-width: 80px;
+  border-bottom: 2px solid var(--border-subtle);
+}
+
+/* Port column headers — horizontal, two-line abbreviation */
+.col-head {
+  width: 46px;
+  min-width: 46px;
+  padding: 5px 2px;
+  vertical-align: bottom;
+  text-align: center;
+  border-bottom: 2px solid var(--border-subtle);
+  border-left: 1px solid var(--border-color);
+}
+.port-name-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.port-name-txt {
   font-size: 0.72rem;
-  font-weight: 600;
+  font-family: monospace;
   color: var(--text-muted);
-  text-transform: uppercase;
-  border-bottom: 1px solid var(--border-subtle);
+  text-align: center;
+  white-space: nowrap;
 }
-.data-table td {
-  padding: 0.65rem 0.75rem;
-  font-size: 0.85rem;
-  border-bottom: 1px solid var(--border-color);
-  color: var(--text-primary);
-}
-.mono { font-family: monospace; }
-.empty { text-align: center; color: var(--text-muted); padding: 2rem !important; }
-.txt-muted { color: var(--text-muted); }
 
-.vlan-id-cell { vertical-align: middle; }
-.vlan-badge {
-  display: inline-block;
-  background: rgba(99,102,241,0.15);
-  color: #818cf8;
+/* Row label column */
+.row-label {
+  padding: 0 8px 0 10px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  font-weight: 500;
+  text-align: right;
+  border-right: 2px solid var(--border-subtle);
+  vertical-align: middle;
+  height: 28px;
+}
+
+/* VLAN label with pill + name */
+.vid-pill {
   font-size: 0.78rem;
-  font-weight: 600;
-  padding: 2px 7px;
-  border-radius: 4px;
+  font-weight: 700;
+  color: #818cf8;
   font-family: monospace;
 }
-.vlan-badge-sm { font-size: 0.72rem; padding: 1px 5px; margin: 1px; }
-.vlan-name { color: var(--text-muted); font-size: 0.8rem; margin-left: 0.25rem; font-family: sans-serif; }
-
-.mode-badge {
-  display: inline-block;
+.vname {
   font-size: 0.72rem;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 4px;
+  color: var(--text-muted);
+  margin-left: 4px;
 }
-.mode-access { background: rgba(34,197,94,0.12); color: #22c55e; }
-.mode-trunk { background: rgba(251,146,60,0.12); color: #fb923c; }
 
-.tagged-vlans { display: flex; flex-wrap: wrap; gap: 2px; }
+/* Data cells */
+.cell {
+  text-align: center;
+  vertical-align: middle;
+  padding: 2px;
+  height: 28px;
+  width: 38px;
+  border: 1px solid var(--border-color);
+}
+
+/* Meta rows (Mode, PVID) */
+.row-meta .cell {
+  background: rgba(255,255,255,0.025);
+}
+.row-pvid .cell {
+  border-bottom: 2px solid var(--border-subtle);
+}
+
+/* Mode badge (small, in cell) */
+.badge-mode {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  font-family: monospace;
+}
+.acc { background: rgba(34,197,94,0.18); color: #22c55e; }
+.trk { background: rgba(251,146,60,0.18); color: #fb923c; }
+
+/* PVID value */
+.pvid-val {
+  font-size: 0.72rem;
+  font-family: monospace;
+  color: var(--text-secondary);
+}
+
+.cell-empty {
+  color: var(--border-subtle);
+  font-size: 0.78rem;
+  opacity: 0.4;
+}
+
+/* A / U / T cells */
+.cell-a, .cell-u, .cell-t {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+.cell-a { background: rgba(59,130,246,0.28); color: #60a5fa; }
+.cell-u { background: rgba(34,197,94,0.22); color: #4ade80; }
+.cell-t { background: rgba(251,146,60,0.22); color: #fb923c; }
+
+.cell-sm {
+  width: 17px;
+  height: 17px;
+  font-size: 0.68rem;
+}
+
+/* Legend */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.15rem 0;
+}
+.leg {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 2rem;
+  font-size: 0.85rem;
+}
 </style>

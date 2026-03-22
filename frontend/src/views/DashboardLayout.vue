@@ -28,20 +28,31 @@
       <Transition name="sidebar">
         <aside v-show="sidebarOpen" class="sidebar">
           <nav class="sidenav">
+            <!-- 관제 section -->
+            <div class="nav-section-label">관제</div>
             <RouterLink to="/topology" class="nav-item" :class="{ active: route.path === '/topology' }">
               <span class="nav-icon">⬡</span> <span class="nav-label">토폴로지</span>
             </RouterLink>
-            <RouterLink v-if="auth.isAdmin" to="/users" class="nav-item" :class="{ active: route.path === '/users' }">
-              <span class="nav-icon">◉</span> <span class="nav-label">사용자 관리</span>
+            <RouterLink to="/monitoring" class="nav-item" :class="{ active: route.path === '/monitoring' }">
+              <span class="nav-icon">⊞</span> <span class="nav-label">장비</span>
             </RouterLink>
-            <RouterLink v-if="auth.isAdmin" to="/groups-manage" class="nav-item" :class="{ active: route.path === '/groups-manage' }">
-              <span class="nav-icon">◫</span> <span class="nav-label">그룹 관리</span>
+
+            <!-- spacer pushes 설정 to bottom -->
+            <div class="nav-spacer"></div>
+
+            <!-- 설정 section -->
+            <div class="nav-section-label">설정</div>
+            <RouterLink to="/alarms" class="nav-item" :class="{ active: route.path === '/alarms' }">
+              <span class="nav-icon">🔔</span> <span class="nav-label">알람</span>
             </RouterLink>
             <RouterLink to="/devices" class="nav-item" :class="{ active: route.path.startsWith('/devices') }">
               <span class="nav-icon">⊞</span> <span class="nav-label">장비 관리</span>
             </RouterLink>
-            <RouterLink to="/alarms" class="nav-item" :class="{ active: route.path === '/alarms' }">
-              <span class="nav-icon">🔔</span> <span class="nav-label">알람</span>
+            <RouterLink v-if="auth.isAdmin" to="/groups-manage" class="nav-item" :class="{ active: route.path === '/groups-manage' }">
+              <span class="nav-icon">◫</span> <span class="nav-label">그룹 관리</span>
+            </RouterLink>
+            <RouterLink v-if="auth.isAdmin" to="/users" class="nav-item" :class="{ active: route.path === '/users' }">
+              <span class="nav-icon">◉</span> <span class="nav-label">사용자 관리</span>
             </RouterLink>
             <RouterLink v-if="auth.isAdmin" to="/controller" class="nav-item" :class="{ active: route.path.startsWith('/controller') }">
               <span class="nav-icon">⚙️</span> <span class="nav-label">컨트롤러 설정</span>
@@ -204,12 +215,24 @@ onUnmounted(() => {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 .sidenav {
   display: flex;
   flex-direction: column;
   padding: 0.5rem 0;
+  flex: 1;
 }
+.nav-section-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.5rem 0.9rem 0.25rem;
+  opacity: 0.6;
+}
+.nav-spacer { flex: 1; min-height: 0.5rem; }
 .nav-item {
   display: flex;
   align-items: center;

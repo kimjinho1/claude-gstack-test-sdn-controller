@@ -119,7 +119,7 @@
     </div>
 
     <!-- ── 모델 추가/수정 모달 ──────────────────────────────────────── -->
-    <div v-if="modelModal.open" class="modal-overlay" @click.self="closeModelModal">
+    <div v-if="modelModal.open" class="modal-overlay">
       <div class="modal">
         <h3>{{ modelModal.editing ? '장비 모델 수정' : '장비 모델 추가' }}</h3>
         <form @submit.prevent="submitModel">
@@ -172,7 +172,7 @@
     </div>
 
     <!-- ── 가상 장비 실행 모달 ──────────────────────────────────────── -->
-    <div v-if="launchModal.open" class="modal-overlay" @click.self="launchModal.open = false">
+    <div v-if="launchModal.open" class="modal-overlay">
       <div class="modal">
         <h3>가상 장비 실행</h3>
         <form @submit.prevent="submitLaunch">

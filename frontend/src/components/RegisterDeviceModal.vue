@@ -1,5 +1,5 @@
 <template>
-  <div class="modal-overlay" @click.self="emit('close')">
+  <div class="modal-overlay">
     <div class="modal">
       <h3>장비 등록</h3>
 

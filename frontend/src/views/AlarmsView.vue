@@ -48,7 +48,7 @@
     </table>
 
     <!-- Action Modal -->
-    <div v-if="actionTarget" class="modal-overlay" @click.self="actionTarget = null">
+    <div v-if="actionTarget" class="modal-overlay">
       <div class="modal">
         <h3>알람 조치 기록</h3>
         <p class="alarm-msg">{{ actionTarget.message }}</p>
