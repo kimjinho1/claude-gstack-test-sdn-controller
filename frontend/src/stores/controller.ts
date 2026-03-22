@@ -19,6 +19,7 @@ export interface VirtualDevice {
   name: string;
   model_id: number;
   container_id: string | null;
+  container_ip: string | null;
   ssh_port: number;
   status: "starting" | "running" | "stopped" | "error";
   created_at: string;

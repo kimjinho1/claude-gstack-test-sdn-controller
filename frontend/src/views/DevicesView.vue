@@ -106,6 +106,16 @@
           <input v-model.number="editForm.floor" class="form-input" type="number" placeholder="예: 3" />
         </div>
 
+        <div class="form-field">
+          <label class="form-label">장비 모델</label>
+          <select v-model="editForm.model_id" class="form-input">
+            <option :value="null">없음</option>
+            <option v-for="m in controllerStore.deviceModels" :key="m.id" :value="m.id">
+              {{ m.vendor }} {{ m.name }}
+            </option>
+          </select>
+        </div>
+
         <!-- SSH credentials -->
         <template v-if="editForm._device.protocol === 'SSH'">
           <div class="section-heading" style="margin-top: 1rem;">SSH 자격증명</div>
@@ -175,6 +185,7 @@ import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useDeviceStore } from "@/stores/device";
 import { useTopologyStore } from "@/stores/topology";
+import { useControllerStore } from "@/stores/controller";
 import StatusBadge from "@/components/StatusBadge.vue";
 import DrawerPanel from "@/components/DrawerPanel.vue";
 import RegisterDeviceModal from "@/components/RegisterDeviceModal.vue";
@@ -186,6 +197,7 @@ const router = useRouter();
 const auth = useAuthStore();
 const deviceStore = useDeviceStore();
 const topologyStore = useTopologyStore();
+const controllerStore = useControllerStore();
 
 const search = ref("");
 const statusFilter = ref("");
@@ -209,6 +221,7 @@ interface EditForm {
   _device: any;
   name: string;
   floor: number | null;
+  model_id: number | null;
   ssh_id: string;
   ssh_password: string;
   ssh_port: number | null;
@@ -247,6 +260,7 @@ async function openEdit(device: any) {
     _device: device,
     name: device.name,
     floor: device.floor ?? null,
+    model_id: device.model_id ?? null,
     ssh_id: device.ssh_id ?? "",
     ssh_password: "",
     ssh_port: device.ssh_port ?? 22,
@@ -275,6 +289,7 @@ async function submitEdit() {
       name: editForm.value.name,
     };
     if (editForm.value.floor != null) payload.floor = editForm.value.floor;
+    payload.model_id = editForm.value.model_id;
 
     if (editForm.value._device.protocol === "SSH") {
       if (editForm.value.ssh_id) payload.ssh_id = editForm.value.ssh_id;
@@ -381,7 +396,10 @@ function loadDevices() {
 }
 
 watch([() => props.selectedSiteId, () => props.selectedBuildingId], loadDevices);
-onMounted(loadDevices);
+onMounted(() => {
+  loadDevices();
+  controllerStore.fetchDeviceModels();
+});
 </script>
 
 <style scoped>

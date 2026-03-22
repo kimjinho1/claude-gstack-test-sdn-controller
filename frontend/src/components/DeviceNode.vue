@@ -11,6 +11,30 @@
       <span class="badge" :class="statusClass">{{ data.status }}</span>
     </div>
     <Handle type="source" :position="Position.Bottom" />
+
+    <!-- Hover tooltip -->
+    <div class="node-tooltip">
+      <div v-if="data.model || data.catalog_model" class="tt-row">
+        <span class="tt-label">모델</span>
+        <span class="tt-value">{{ data.model || data.catalog_model }}</span>
+      </div>
+      <div class="tt-row">
+        <span class="tt-label">MAC</span>
+        <span class="tt-value mono">{{ data.mac_addr }}</span>
+      </div>
+      <div v-if="data.serial_no" class="tt-row">
+        <span class="tt-label">S/N</span>
+        <span class="tt-value mono">{{ data.serial_no }}</span>
+      </div>
+      <div v-if="data.sw_version" class="tt-row">
+        <span class="tt-label">SW</span>
+        <span class="tt-value mono">{{ data.sw_version }}</span>
+      </div>
+      <div v-if="data.uptime" class="tt-row">
+        <span class="tt-label">Uptime</span>
+        <span class="tt-value">{{ data.uptime }}</span>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -23,9 +47,15 @@ const props = defineProps<{
     id: number
     name: string
     ip_addr: string
+    mac_addr: string
     status: string
     protocol: string
     model: string | null
+    model_id: number | null
+    catalog_model: string | null
+    serial_no: string | null
+    sw_version: string | null
+    uptime: string | null
   }
 }>()
 
@@ -42,10 +72,54 @@ const statusClass = computed(() => props.data.status.toLowerCase())
   cursor: pointer;
   transition: border-color 0.15s, box-shadow 0.15s;
   font-family: 'Inter', 'Segoe UI', sans-serif;
+  position: relative;
 }
 .device-node:hover {
   border-color: var(--accent-primary);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-primary) 25%, transparent);
+}
+
+/* Tooltip */
+.node-tooltip {
+  display: none;
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 0;
+  background: var(--bg-modal);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 8px 12px;
+  min-width: 220px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  z-index: 9999;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.device-node:hover .node-tooltip {
+  display: block;
+}
+.tt-row {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 2px 0;
+}
+.tt-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  min-width: 48px;
+  flex-shrink: 0;
+}
+.tt-value {
+  font-size: 0.78rem;
+  color: var(--text-primary);
+}
+.tt-value.mono {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.74rem;
 }
 .device-node.managed  { border-left: 3px solid var(--success); }
 .device-node.error    { border-left: 3px solid var(--danger); }
