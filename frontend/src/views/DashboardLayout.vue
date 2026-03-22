@@ -17,18 +17,27 @@
     <div class="body">
       <!-- Sidebar -->
       <aside class="sidebar">
-        <!-- Navigation Tabs -->
         <nav class="sidenav">
-          <RouterLink v-if="auth.isAdmin" to="/users" class="nav-item" :class="{ active: route.path === '/users' }">사용자 관리</RouterLink>
-          <RouterLink v-if="auth.isAdmin" to="/groups-manage" class="nav-item" :class="{ active: route.path === '/groups-manage' }">그룹 관리</RouterLink>
-          <RouterLink to="/devices" class="nav-item" :class="{ active: route.path.startsWith('/devices') }">장비 관리</RouterLink>
+          <RouterLink to="/topology" class="nav-item" :class="{ active: route.path === '/topology' }">
+            <span class="nav-icon">⬡</span> 토폴로지
+          </RouterLink>
+          <RouterLink to="/devices" class="nav-item" :class="{ active: route.path.startsWith('/devices') }">
+            <span class="nav-icon">⊞</span> 장비 관리
+          </RouterLink>
+          <RouterLink v-if="auth.isAdmin" to="/groups-manage" class="nav-item" :class="{ active: route.path === '/groups-manage' }">
+            <span class="nav-icon">◫</span> 그룹 관리
+          </RouterLink>
+          <RouterLink v-if="auth.isAdmin" to="/users" class="nav-item" :class="{ active: route.path === '/users' }">
+            <span class="nav-icon">◉</span> 사용자 관리
+          </RouterLink>
         </nav>
-        <!-- Topology Tree (only on devices section) -->
+
+        <!-- Topology tree: only on devices section -->
         <TopologyTree v-if="route.path.startsWith('/devices')" @select="onTreeSelect" />
       </aside>
 
       <!-- Main Content -->
-      <main class="content">
+      <main class="content" :class="{ 'no-pad': route.path === '/topology' }">
         <RouterView :selected-building-id="selectedBuildingId" :selected-site-id="selectedSiteId" />
       </main>
     </div>
@@ -73,34 +82,130 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.layout { display: flex; flex-direction: column; min-height: 100vh; }
+/* ── base ──────────────────────────────────────────────────────────────── */
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #0e1520;
+  color: #d4dbe4;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+/* ── topbar ────────────────────────────────────────────────────────────── */
 .topbar {
-  display: flex; align-items: center; justify-content: space-between;
-  background: #1a202c; color: white; padding: 0 1.5rem; height: 52px;
-  position: sticky; top: 0; z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #111820;
+  border-bottom: 1px solid #1a2a3a;
+  padding: 0 1.25rem;
+  height: 48px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-shrink: 0;
 }
-.logo { font-size: 1.1rem; font-weight: 700; color: #63b3ed; }
-.topbar-right { display: flex; align-items: center; gap: 1rem; }
+.logo {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #4dacf7;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.topbar-right { display: flex; align-items: center; gap: 0.9rem; }
+
 .alarm-badge {
-  padding: 0.3rem 0.7rem; border-radius: 20px;
-  background: #2d3748; color: #a0aec0; text-decoration: none; font-size: 0.85rem;
-  transition: background 0.2s;
+  padding: 0.25rem 0.65rem;
+  border-radius: 20px;
+  background: #162030;
+  color: #6a8099;
+  text-decoration: none;
+  font-size: 0.8rem;
+  border: 1px solid #1e2d3a;
+  transition: all 0.15s;
 }
-.alarm-badge.critical { background: #c53030; color: white; }
-.username { color: #a0aec0; font-size: 0.9rem; }
+.alarm-badge:hover { background: #1a2a3a; color: #d4dbe4; }
+.alarm-badge.critical {
+  background: #3a0a0a;
+  color: #ff6b6b;
+  border-color: #8b2222;
+  animation: pulse-red 1.6s ease-in-out infinite;
+}
+@keyframes pulse-red {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(219,55,55,0.0); }
+  50% { box-shadow: 0 0 0 4px rgba(219,55,55,0.3); }
+}
+
+.username { color: #6a8099; font-size: 0.83rem; }
 .logout-btn {
-  background: none; border: 1px solid #4a5568; color: #a0aec0;
-  padding: 0.3rem 0.7rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem;
+  background: transparent;
+  border: 1px solid #2a3a4a;
+  color: #6a8099;
+  padding: 0.25rem 0.65rem;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.15s;
 }
-.logout-btn:hover { border-color: #a0aec0; color: white; }
-.body { display: flex; flex: 1; }
-.sidebar { width: 260px; background: white; border-right: 1px solid #e2e8f0; overflow-y: auto; flex-shrink: 0; }
-.sidenav { display: flex; flex-direction: column; border-bottom: 1px solid #e2e8f0; padding: 0.5rem 0; }
+.logout-btn:hover { border-color: #6a8099; color: #d4dbe4; }
+
+/* ── body ──────────────────────────────────────────────────────────────── */
+.body { display: flex; flex: 1; min-height: 0; }
+
+/* ── sidebar ───────────────────────────────────────────────────────────── */
+.sidebar {
+  width: 220px;
+  background: #0e1520;
+  border-right: 1px solid #1a2a3a;
+  overflow-y: auto;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+.sidenav {
+  display: flex;
+  flex-direction: column;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #1a2a3a;
+}
 .nav-item {
-  display: block; padding: 0.6rem 1rem; font-size: 0.9rem; color: #4a5568;
-  text-decoration: none; transition: background 0.1s;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.58rem 1rem;
+  font-size: 0.85rem;
+  color: #8fa0b4;
+  text-decoration: none;
+  transition: all 0.12s;
+  border-left: 3px solid transparent;
 }
-.nav-item:hover { background: #f7fafc; color: #2d3748; }
-.nav-item.active { background: #ebf8ff; color: #2b6cb0; font-weight: 600; border-left: 3px solid #4299e1; }
-.content { flex: 1; padding: 1.5rem; overflow-y: auto; }
+.nav-item:hover { background: #131f2e; color: #d4dbe4; }
+.nav-item.active {
+  background: #0d1e30;
+  color: #4dacf7;
+  border-left-color: #1d6fa4;
+  font-weight: 600;
+}
+.nav-icon {
+  font-size: 0.9rem;
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* ── content ───────────────────────────────────────────────────────────── */
+.content {
+  flex: 1;
+  padding: 1.5rem;
+  overflow-y: auto;
+  background: #0e1520;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.content.no-pad {
+  padding: 0;
+  overflow: hidden;
+}
 </style>

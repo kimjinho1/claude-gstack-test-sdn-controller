@@ -2,6 +2,33 @@
 
 All notable changes to the SDN Controller project will be documented in this file.
 
+## [0.1.3.0] - 2026-03-22
+
+### Added
+- **Network Topology View** (`TopologyView.vue`): interactive VueFlow canvas displaying all devices as nodes with dagre tree layout (TB direction). Node colors reflect device status (MANAGED=green, ERROR=red, PENDING=orange, UNREGISTERED=gray). Minimap, zoom controls, and fit-to-view button included.
+- **DeviceNode component** (`DeviceNode.vue`): custom VueFlow node rendering device name, IP, status badge, protocol badge, and connection Handles.
+- **Device link management**: topology edges can be created by dragging from node handles or via the "+ 링크 추가" modal. Selected edges show an action bar for deletion.
+- **`DeviceLink` model** (`backend/app/models/device.py`): `device_links` table with `parent_id`/`child_id` FKs (CASCADE DELETE), `UniqueConstraint("parent_id", "child_id")`, and indexed columns.
+- **Alembic migration 0004**: creates the `device_links` table with indexes.
+- **Device Links API** (`backend/app/api/device_links.py`): `GET /device-links/graph` (combined devices + links for topology), `GET /device-links` (list), `POST /device-links` (create with self-loop and duplicate validation), `DELETE /device-links/{id}`.
+- **Parent device selector in DevicesView**: device edit drawer includes "상위 장비 (부모)" select — automatically creates/deletes device links when saving.
+- **Test coverage**: 9 integration tests for all device-links API endpoints including edge cases (self-loop, missing device, duplicate, concurrent create with IntegrityError).
+
+### Changed
+- `DashboardLayout.vue`: applied full Palantir dark theme (`#111820` topbar, `#0e1520` sidebar/content, `#131f2b` drawer, `#1e2d3a` borders, `#1d6fa4` active nav); added 토폴로지 nav item; `content.no-pad` class for full-bleed views.
+- `DrawerPanel.vue`: dark theme CSS (was light Blueprint theme).
+- Default route `/` now redirects to `/topology` (was `/devices` due to a duplicate redirect entry bug).
+- `DevicesView.vue`: dark Palantir theme; parent device selector added to edit drawer.
+
+### Fixed
+- Router: removed duplicate `{ path: "", redirect: "/devices" }` entry that shadowed the `/topology` redirect (Vue Router first-match rule).
+- `device_links` `create_link`: wrapped DB insert in `IntegrityError` handler to return 409 instead of 500 on concurrent duplicate inserts.
+- `DevicesView.openEdit`: link fetch failure now surfaces an error instead of silently leaving `parent_id` as `null`.
+- `DevicesView.submitEdit`: eliminated redundant link list re-fetch — uses `_originalParentId` snapshot from `openEdit` for change detection; 404 on `DELETE` (already-deleted link) is tolerated.
+- `TopologyView.deleteEdge`: failure no longer causes optimistic edge removal — edge stays in place and error banner is shown.
+- `TopologyView.createLink`: only swallows 409 (duplicate); other errors are re-thrown to surface in the modal.
+- `TopologyView.applyLayout`: guards against empty node list to prevent dagre producing NaN positions.
+
 ## [0.1.2.0] - 2026-03-22
 
 ### Added

@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from enum import Enum as PyEnum
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -68,6 +68,25 @@ class Device(Base):
     vlans: Mapped[list["Vlan"]] = relationship("Vlan", back_populates="device", cascade="all, delete-orphan")
     endpoints: Mapped[list["Endpoint"]] = relationship("Endpoint", back_populates="device", cascade="all, delete-orphan")
     alarms: Mapped[list["Alarm"]] = relationship("Alarm", back_populates="device")
+
+
+class DeviceLink(Base):
+    """Parent-child link between devices for topology visualization."""
+
+    __tablename__ = "device_links"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    parent_id: Mapped[int] = mapped_column(
+        ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    child_id: Mapped[int] = mapped_column(
+        ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+
+    __table_args__ = (UniqueConstraint("parent_id", "child_id", name="uq_device_link"),)
 
 
 class DevicePort(Base):
