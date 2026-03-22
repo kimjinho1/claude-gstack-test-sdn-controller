@@ -12,10 +12,9 @@ All notable changes to the SDN Controller project will be documented in this fil
 - **FOUC prevention**: synchronous `<script>` in `index.html` applies saved theme before Vue mounts — eliminates dark-to-light flash for light-mode users.
 
 ### Changed
-- All views migrated from hardcoded hex colors to CSS custom properties: `AlarmsView`, `ChangePasswordView`, `DevicesView`, `DeviceDetailView`, `GroupManageView`, `LoginView`, `TopologyView`, `UsersView`.
-- All components migrated to CSS vars: `DeviceNode`, `DrawerPanel`, `RegisterDeviceModal`, `StatusBadge`, `TopologyTree`.
-- `DashboardLayout.vue`: collapsible sidebar + theme toggle added; group tree panel `🌲` now accessible from all routes.
-- `TopologyView.vue`: VueFlow background dot grid uses `var(--border-color)` for theme-aware rendering.
+- Every view and component now uses CSS custom properties instead of hardcoded colors — future theme additions require only a single CSS block, not touching every component.
+- Group tree panel `🌲` is now accessible from all routes (previously topology-only).
+- Topology canvas background dot grid adapts to the active theme.
 
 ### Fixed
 - `GroupManageView`, `UsersView`, `AlarmsView`: text was invisible in dark mode due to hardcoded white/light background colors — replaced with CSS vars throughout.
