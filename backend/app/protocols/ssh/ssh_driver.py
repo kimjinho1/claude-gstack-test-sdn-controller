@@ -15,6 +15,7 @@ class SSHDriver(AbstractProtocolDriver):
         "cisco_ios": "cisco_ios",
         "cisco_nxos": "cisco_nxos",
         "cisco_xe": "cisco_xe",
+        "arista_eos": "arista_eos",
     }
 
     def __init__(self, ip: str, username: str, password: str, port: int = 22, device_type: str = "cisco_ios"):
@@ -36,20 +37,20 @@ class SSHDriver(AbstractProtocolDriver):
             return SystemInfo(
                 uptime=d.get("uptime", ""),
                 serial_no=d.get("serial", [""])[0] if isinstance(d.get("serial"), list) else d.get("serial", ""),
-                model=d.get("hardware", [""])[0] if isinstance(d.get("hardware"), list) else d.get("hardware", ""),
+                model=d.get("hardware", [""])[0] if isinstance(d.get("hardware"), list) else d.get("hardware", "") or d.get("model", ""),
                 sw_version=d.get("version", ""),
             )
 
-        # Fallback: regex parse
+        # Fallback: regex parse (Cisco + Arista patterns)
         uptime = re.search(r"uptime is (.+)", output or "")
-        serial = re.search(r"Processor board ID (\S+)", output or "")
-        model = re.search(r"Cisco (\S+) .* \(revision", output or "")
-        version = re.search(r"Version (\S+),", output or "")
+        serial = re.search(r"(?:Processor board ID|Serial number)\s*:?\s*(\S+)", output or "")
+        model = re.search(r"(?:Cisco (\S+) .* \(revision|Model\s*:\s*(\S+))", output or "")
+        version = re.search(r"(?:Version (\S+)[,\s]|Software Version\s+(\S+))", output or "")
         return SystemInfo(
             uptime=uptime.group(1) if uptime else "",
             serial_no=serial.group(1) if serial else "",
-            model=model.group(1) if model else "",
-            sw_version=version.group(1) if version else "",
+            model=(model.group(1) or model.group(2)) if model else "",
+            sw_version=(version.group(1) or version.group(2)) if version else "",
         )
 
     def get_ports(self) -> list[PortInfo]:
