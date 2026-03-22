@@ -49,6 +49,7 @@ class SiteCreate(BaseModel):
 class SiteUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
+    group_id: int | None = None  # allow moving site to a different group
 
 
 class BuildingCreate(BaseModel):
@@ -60,3 +61,4 @@ class BuildingCreate(BaseModel):
 class BuildingUpdate(BaseModel):
     name: str | None = None
     floors: int | None = None
+    site_id: int | None = None  # allow moving building to a different site

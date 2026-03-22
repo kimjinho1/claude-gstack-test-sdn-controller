@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
 from enum import Enum as PyEnum
 
-from sqlalchemy import Boolean, DateTime, Enum, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Integer, String, Table
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
@@ -17,6 +17,15 @@ class UserRole(str, PyEnum):
         return {"SUPERADMIN": 4, "ADMIN": 3, "USER": 2, "GUEST": 1}[self.value]
 
 
+# Association table: which groups a user can access (empty = all groups)
+user_group_access = Table(
+    "user_group_access",
+    Base.metadata,
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    Column("group_id", Integer, ForeignKey("groups.id", ondelete="CASCADE"), primary_key=True),
+)
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -28,4 +37,9 @@ class User(Base):
     must_change_password: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+
+    # Groups this user has access to (empty list = access to all groups)
+    accessible_groups: Mapped[list] = relationship(
+        "Group", secondary=user_group_access, lazy="selectin"
     )

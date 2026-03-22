@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
 from app.core.security import hash_password
+from app.models.topology import Group
 from app.models.user import User, UserRole
 from app.schemas.user import UserResponse
 
@@ -131,6 +132,45 @@ async def delete_user(
     _check_can_manage(current_user, target.role)
 
     await db.delete(target)
+    await db.commit()
+
+
+@router.get("/{user_id}/groups")
+async def get_user_groups(
+    user_id: int,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    """Get group IDs this user can access (empty = all groups)."""
+    result = await db.execute(select(User).where(User.id == user_id))
+    target = result.scalar_one_or_none()
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    _check_can_manage(current_user, target.role)
+    return {"group_ids": [g.id for g in target.accessible_groups]}
+
+
+@router.put("/{user_id}/groups", status_code=status.HTTP_204_NO_CONTENT)
+async def set_user_groups(
+    user_id: int,
+    body: BulkDeleteRequest,  # reuse ids field: list[int] = group IDs
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    """Set accessible groups for a user (empty list = access to all groups)."""
+    result = await db.execute(select(User).where(User.id == user_id))
+    target = result.scalar_one_or_none()
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    _check_can_manage(current_user, target.role)
+
+    # Resolve group objects
+    groups: list[Group] = []
+    if body.ids:
+        g_result = await db.execute(select(Group).where(Group.id.in_(body.ids)))
+        groups = list(g_result.scalars().all())
+
+    target.accessible_groups = groups
     await db.commit()
 
 
