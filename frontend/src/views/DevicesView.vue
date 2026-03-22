@@ -37,18 +37,18 @@
       </thead>
       <tbody>
         <tr v-if="filteredDevices.length === 0">
-          <td colspan="8" style="text-align: center; color: #718096; padding: 2rem;">등록된 장비가 없습니다.</td>
+          <td colspan="8" class="empty-row">등록된 장비가 없습니다.</td>
         </tr>
         <tr
           v-for="device in filteredDevices"
           :key="device.id"
           class="device-row"
-          @click="openDetail(device)"
+          @click="openEdit(device)"
           @contextmenu.prevent="openCtx($event, device)"
         >
           <td @click.stop><input type="checkbox" :checked="selected.has(device.id)" @change="toggleOne(device.id)" /></td>
           <td><strong>{{ device.name }}</strong></td>
-          <td>{{ device.ip_addr }}</td>
+          <td class="mono">{{ device.ip_addr }}</td>
           <td class="mono">{{ device.mac_addr }}</td>
           <td><span class="proto-badge">{{ device.protocol }}</span></td>
           <td><StatusBadge :status="device.status" /></td>
@@ -67,39 +67,88 @@
       <button class="ctx-item ctx-danger" @click="confirmDelete(ctxMenu.item!)">삭제</button>
     </div>
 
-    <!-- Device Detail Drawer -->
-    <DrawerPanel v-model="drawerOpen" :title="drawerDevice?.name || '장비 정보'" :width="480">
-      <div v-if="drawerDevice" class="detail-body">
-        <div class="detail-section">
-          <h4>기본 정보</h4>
-          <div class="detail-grid">
-            <span class="label">장비명</span><span>{{ drawerDevice.name }}</span>
-            <span class="label">IP 주소</span><span class="mono">{{ drawerDevice.ip_addr }}</span>
-            <span class="label">MAC 주소</span><span class="mono">{{ drawerDevice.mac_addr }}</span>
-            <span class="label">프로토콜</span><span><span class="proto-badge">{{ drawerDevice.protocol }}</span></span>
-            <span class="label">상태</span><span><StatusBadge :status="drawerDevice.status" /></span>
+    <!-- Device Edit Drawer -->
+    <DrawerPanel v-model="drawerOpen" :title="editForm ? editForm.name || '장비 정보' : '장비 정보'" :width="480">
+      <div v-if="editForm" class="drawer-content">
+
+        <!-- Read-only info section -->
+        <div class="info-section">
+          <div class="section-heading">장비 현황</div>
+          <div class="info-grid">
+            <span class="info-label">IP 주소</span><span class="mono">{{ editForm._device.ip_addr }}</span>
+            <span class="info-label">MAC 주소</span><span class="mono">{{ editForm._device.mac_addr }}</span>
+            <span class="info-label">프로토콜</span><span><span class="proto-badge">{{ editForm._device.protocol }}</span></span>
+            <span class="info-label">상태</span><span><StatusBadge :status="editForm._device.status" /></span>
+            <template v-if="editForm._device.model">
+              <span class="info-label">모델</span><span>{{ editForm._device.model }}</span>
+            </template>
+            <template v-if="editForm._device.uptime">
+              <span class="info-label">업타임</span><span>{{ editForm._device.uptime }}</span>
+            </template>
+            <template v-if="editForm._device.last_polled_at">
+              <span class="info-label">마지막 폴링</span><span>{{ formatTime(editForm._device.last_polled_at) }}</span>
+            </template>
           </div>
         </div>
-        <div class="detail-section" v-if="drawerDevice.model || drawerDevice.serial_no || drawerDevice.sw_version || drawerDevice.uptime">
-          <h4>장비 상세</h4>
-          <div class="detail-grid">
-            <span class="label">모델</span><span>{{ drawerDevice.model || "—" }}</span>
-            <span class="label">시리얼 번호</span><span class="mono">{{ drawerDevice.serial_no || "—" }}</span>
-            <span class="label">SW 버전</span><span>{{ drawerDevice.sw_version || "—" }}</span>
-            <span class="label">업타임</span><span>{{ drawerDevice.uptime || "—" }}</span>
-          </div>
+
+        <div class="divider" />
+
+        <!-- Editable fields -->
+        <div class="section-heading">정보 수정</div>
+
+        <div class="form-field">
+          <label class="form-label">장비명</label>
+          <input v-model="editForm.name" class="form-input" placeholder="장비명" />
         </div>
-        <div class="detail-section">
-          <h4>폴링 정보</h4>
-          <div class="detail-grid">
-            <span class="label">마지막 폴링</span>
-            <span>{{ drawerDevice.last_polled_at ? formatTime(drawerDevice.last_polled_at) : "—" }}</span>
-          </div>
+
+        <div class="form-field">
+          <label class="form-label">층 (Floor)</label>
+          <input v-model.number="editForm.floor" class="form-input" type="number" placeholder="예: 3" />
         </div>
+
+        <!-- SSH credentials -->
+        <template v-if="editForm._device.protocol === 'SSH'">
+          <div class="section-heading" style="margin-top: 1rem;">SSH 자격증명</div>
+          <div class="form-field">
+            <label class="form-label">SSH 사용자 ID</label>
+            <input v-model="editForm.ssh_id" class="form-input" placeholder="admin" />
+          </div>
+          <div class="form-field">
+            <label class="form-label">SSH 비밀번호 <span class="hint">(변경 시 입력)</span></label>
+            <input v-model="editForm.ssh_password" class="form-input" type="password" placeholder="변경하지 않으면 비워두세요" />
+          </div>
+          <div class="form-field">
+            <label class="form-label">SSH 포트</label>
+            <input v-model.number="editForm.ssh_port" class="form-input" type="number" placeholder="22" />
+          </div>
+        </template>
+
+        <!-- REST credentials -->
+        <template v-else-if="editForm._device.protocol === 'REST'">
+          <div class="section-heading" style="margin-top: 1rem;">REST 자격증명</div>
+          <div class="form-field">
+            <label class="form-label">REST 사용자 ID</label>
+            <input v-model="editForm.rest_id" class="form-input" placeholder="admin" />
+          </div>
+          <div class="form-field">
+            <label class="form-label">REST 비밀번호 <span class="hint">(변경 시 입력)</span></label>
+            <input v-model="editForm.rest_password" class="form-input" type="password" placeholder="변경하지 않으면 비워두세요" />
+          </div>
+          <div class="form-field">
+            <label class="form-label">REST 포트</label>
+            <input v-model.number="editForm.rest_port" class="form-input" type="number" placeholder="443" />
+          </div>
+        </template>
+
+        <div v-if="editError" class="error-msg">{{ editError }}</div>
       </div>
+
       <template #footer>
-        <button class="btn-secondary" @click="drawerOpen = false">닫기</button>
-        <button class="btn-primary" @click="goToDetail">상세 보기 →</button>
+        <button class="btn-link" @click="goToDetail">상세 보기 →</button>
+        <button class="btn-secondary" @click="drawerOpen = false">취소</button>
+        <button class="btn-primary" @click="submitEdit" :disabled="editLoading">
+          {{ editLoading ? "저장 중..." : "저장" }}
+        </button>
       </template>
     </DrawerPanel>
 
@@ -142,15 +191,74 @@ function closeCtx() {
 onMounted(() => document.addEventListener("click", closeCtx));
 onUnmounted(() => document.removeEventListener("click", closeCtx));
 
-// Drawer
+// Edit drawer
+interface EditForm {
+  _device: any;
+  name: string;
+  floor: number | null;
+  ssh_id: string;
+  ssh_password: string;
+  ssh_port: number | null;
+  rest_id: string;
+  rest_password: string;
+  rest_port: number | null;
+}
+
 const drawerOpen = ref(false);
-const drawerDevice = ref<any | null>(null);
-function openDetail(device: any) {
-  drawerDevice.value = device;
+const editForm = ref<EditForm | null>(null);
+const editError = ref("");
+const editLoading = ref(false);
+
+function openEdit(device: any) {
+  editForm.value = {
+    _device: device,
+    name: device.name,
+    floor: device.floor ?? null,
+    ssh_id: device.ssh_id ?? "",
+    ssh_password: "",
+    ssh_port: device.ssh_port ?? 22,
+    rest_id: device.rest_id ?? "",
+    rest_password: "",
+    rest_port: device.rest_port ?? null,
+  };
+  editError.value = "";
   drawerOpen.value = true;
 }
+
 function goToDetail() {
-  if (drawerDevice.value) router.push(`/devices/${drawerDevice.value.id}`);
+  if (editForm.value) router.push(`/devices/${editForm.value._device.id}`);
+}
+
+async function submitEdit() {
+  if (!editForm.value) return;
+  if (!editForm.value.name.trim()) { editError.value = "장비명을 입력하세요."; return; }
+
+  editLoading.value = true;
+  editError.value = "";
+  try {
+    const payload: Record<string, any> = {
+      name: editForm.value.name,
+    };
+    if (editForm.value.floor != null) payload.floor = editForm.value.floor;
+
+    if (editForm.value._device.protocol === "SSH") {
+      if (editForm.value.ssh_id) payload.ssh_id = editForm.value.ssh_id;
+      if (editForm.value.ssh_password) payload.ssh_password = editForm.value.ssh_password;
+      if (editForm.value.ssh_port != null) payload.ssh_port = editForm.value.ssh_port;
+    } else if (editForm.value._device.protocol === "REST") {
+      if (editForm.value.rest_id) payload.rest_id = editForm.value.rest_id;
+      if (editForm.value.rest_password) payload.rest_password = editForm.value.rest_password;
+      if (editForm.value.rest_port != null) payload.rest_port = editForm.value.rest_port;
+    }
+
+    await api.patch(`/devices/${editForm.value._device.id}`, payload);
+    drawerOpen.value = false;
+    loadDevices();
+  } catch (e: any) {
+    editError.value = e.response?.data?.detail || "저장에 실패했습니다.";
+  } finally {
+    editLoading.value = false;
+  }
 }
 
 const filteredDevices = computed(() => {
@@ -220,57 +328,99 @@ onMounted(loadDevices);
 </script>
 
 <style scoped>
-.page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
-h2 { font-size: 1.3rem; font-weight: 700; }
-.breadcrumb { color: #718096; font-size: 0.85rem; margin-top: 0.2rem; }
-.header-actions { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
-.search { padding: 0.45rem 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.9rem; width: 180px; outline: none; }
-.search:focus { border-color: #4299e1; }
-.filter-select { padding: 0.45rem 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.9rem; background: white; }
-.btn-primary { padding: 0.45rem 1rem; background: #4299e1; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500; }
-.btn-primary:hover { background: #3182ce; }
-.btn-secondary { padding: 0.45rem 1rem; background: white; color: #4a5568; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
-.btn-secondary:hover { background: #f7fafc; }
-.btn-danger { padding: 0.45rem 1rem; background: #e53e3e; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
-.device-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-thead { background: #f7fafc; }
-th { padding: 0.75rem 1rem; text-align: left; font-size: 0.8rem; font-weight: 600; color: #718096; text-transform: uppercase; }
-td { padding: 0.85rem 1rem; border-top: 1px solid #f0f4f8; font-size: 0.9rem; }
-.device-row { cursor: pointer; transition: background 0.1s; }
-.device-row:hover td { background: #f7fafc; }
-.mono { font-family: monospace; font-size: 0.82rem; }
-.proto-badge { background: #e9d8fd; color: #553c9a; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.78rem; font-weight: 500; }
-.loading { text-align: center; padding: 3rem; color: #718096; }
+/* ── Layout ── */
+.page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem; }
+h2 { font-size: 1.15rem; font-weight: 700; color: #182026; }
+.breadcrumb { color: #5c7080; font-size: 0.83rem; margin-top: 0.2rem; }
+.header-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
 
-/* Context menu */
+/* ── Inputs ── */
+.search {
+  padding: 0.4rem 0.7rem; border: 1px solid #dce1e7; border-radius: 2px;
+  font-size: 0.88rem; width: 180px; outline: none; color: #182026;
+}
+.search:focus { border-color: #1d6fa4; }
+.filter-select {
+  padding: 0.4rem 0.7rem; border: 1px solid #dce1e7; border-radius: 2px;
+  font-size: 0.88rem; background: white; color: #182026; outline: none;
+}
+.filter-select:focus { border-color: #1d6fa4; }
+
+/* ── Buttons ── */
+.btn-primary {
+  padding: 0.4rem 0.9rem; background: #1d6fa4; color: white; border: none;
+  border-radius: 2px; cursor: pointer; font-size: 0.88rem; font-weight: 500;
+}
+.btn-primary:hover { background: #185f8a; }
+.btn-primary:disabled { background: #8ab4cc; cursor: not-allowed; }
+.btn-secondary {
+  padding: 0.4rem 0.9rem; background: white; color: #182026;
+  border: 1px solid #dce1e7; border-radius: 2px; cursor: pointer; font-size: 0.88rem;
+}
+.btn-secondary:hover { background: #ebf1f5; }
+.btn-danger {
+  padding: 0.4rem 0.9rem; background: #c23030; color: white; border: none;
+  border-radius: 2px; cursor: pointer; font-size: 0.88rem;
+}
+.btn-danger:hover { background: #a82a2a; }
+.btn-link {
+  padding: 0.4rem 0.5rem; background: none; border: none; color: #1d6fa4;
+  cursor: pointer; font-size: 0.88rem; margin-right: auto;
+}
+.btn-link:hover { text-decoration: underline; }
+
+/* ── Table ── */
+.device-table { width: 100%; border-collapse: collapse; background: white; border: 1px solid #dce1e7; border-radius: 2px; }
+thead { background: #f5f8fa; }
+th {
+  padding: 0.6rem 1rem; text-align: left; font-size: 0.72rem; font-weight: 600;
+  color: #5c7080; text-transform: uppercase; letter-spacing: 0.04em;
+  border-bottom: 1px solid #dce1e7;
+}
+td { padding: 0.75rem 1rem; border-top: 1px solid #ebf1f5; font-size: 0.88rem; color: #182026; }
+.device-row { cursor: pointer; transition: background 0.1s; }
+.device-row:hover td { background: #f5f8fa; }
+.empty-row { text-align: center; color: #5c7080; padding: 2rem 1rem !important; }
+.mono { font-family: monospace; font-size: 0.82rem; }
+.proto-badge {
+  background: #ebf1f5; color: #1d6fa4; padding: 0.15rem 0.5rem;
+  border-radius: 2px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em;
+}
+.loading { text-align: center; padding: 3rem; color: #5c7080; }
+
+/* ── Context menu ── */
 .ctx-menu {
-  position: fixed;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-  z-index: 500;
-  min-width: 100px;
-  padding: 0.25rem 0;
+  position: fixed; background: white; border: 1px solid #dce1e7;
+  border-radius: 2px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  z-index: 500; min-width: 100px; padding: 0.2rem 0;
 }
 .ctx-item {
-  display: block;
-  width: 100%;
-  padding: 0.5rem 1rem;
-  background: none;
-  border: none;
-  text-align: left;
-  cursor: pointer;
-  font-size: 0.875rem;
-  color: #2d3748;
+  display: block; width: 100%; padding: 0.5rem 1rem; background: none;
+  border: none; text-align: left; cursor: pointer; font-size: 0.875rem; color: #182026;
 }
-.ctx-item:hover { background: #f7fafc; }
-.ctx-danger { color: #e53e3e; }
-.ctx-danger:hover { background: #fff5f5; }
+.ctx-item:hover { background: #f5f8fa; }
+.ctx-danger { color: #c23030; }
+.ctx-danger:hover { background: #fdf0f0; }
 
-/* Drawer detail content */
-.detail-body { display: flex; flex-direction: column; gap: 1.5rem; }
-.detail-section h4 { font-size: 0.78rem; font-weight: 700; color: #718096; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 0.75rem; }
-.detail-grid { display: grid; grid-template-columns: 7rem 1fr; gap: 0.5rem 1rem; align-items: center; }
-.label { font-size: 0.85rem; color: #718096; }
+/* ── Drawer content ── */
+.drawer-content { display: flex; flex-direction: column; }
+.section-heading {
+  font-size: 0.72rem; font-weight: 700; color: #5c7080;
+  text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;
+}
+.divider { border: none; border-top: 1px solid #ebf1f5; margin: 1.25rem 0; }
+
+.info-section { margin-bottom: 0; }
+.info-grid { display: grid; grid-template-columns: 7rem 1fr; gap: 0.45rem 1rem; align-items: center; }
+.info-label { font-size: 0.83rem; color: #5c7080; }
+
+.form-field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.75rem; }
+.form-label { font-size: 0.82rem; font-weight: 500; color: #182026; }
+.form-input {
+  padding: 0.45rem 0.65rem; border: 1px solid #dce1e7; border-radius: 2px;
+  font-size: 0.88rem; color: #182026; outline: none;
+}
+.form-input:focus { border-color: #1d6fa4; }
+.hint { font-size: 0.75rem; color: #5c7080; font-weight: 400; }
+.error-msg { color: #c23030; font-size: 0.83rem; margin-top: 0.75rem; }
 </style>
