@@ -10,7 +10,6 @@ const router = createRouter({
       path: "/",
       component: () => import("@/views/DashboardLayout.vue"),
       children: [
-        { path: "", redirect: "/devices" },
         { path: "", redirect: "/topology" },
         { path: "topology", name: "Topology", component: () => import("@/views/TopologyView.vue") },
         { path: "users", name: "Users", component: () => import("@/views/UsersView.vue") },
