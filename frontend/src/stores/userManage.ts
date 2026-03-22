@@ -28,6 +28,7 @@ export const useUserManageStore = defineStore("userManage", () => {
   async function createUser(payload: { username: string; password: string; role: UserRole; must_change_password?: boolean }) {
     const { data } = await api.post("/users", payload);
     users.value.push(data);
+    return data as ManagedUser;
   }
 
   async function updateUser(id: number, payload: Partial<{ username: string; password: string; role: UserRole; is_active: boolean; must_change_password: boolean }>) {
