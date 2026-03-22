@@ -15,7 +15,13 @@
           </div>
           <div class="field">
             <label>MAC 주소 *</label>
-            <input v-model="form.mac_addr" placeholder="00:1A:2B:3C:4D:5E" required />
+            <input
+              :value="form.mac_addr"
+              @input="onMacInput"
+              placeholder="00:1A:2B:3C:4D:5E"
+              maxlength="17"
+              required
+            />
           </div>
           <div class="field">
             <label>프로토콜 *</label>
@@ -120,6 +126,16 @@ const form = reactive({
   ssh_id: "", ssh_password: "", ssh_port: 22,
   rest_id: "", rest_password: "", rest_port: undefined as number | undefined,
 });
+
+function onMacInput(e: Event) {
+  const raw = (e.target as HTMLInputElement).value.replace(/[^0-9a-fA-F]/g, "");
+  const trimmed = raw.slice(0, 12);
+  const formatted = trimmed.match(/.{1,2}/g)?.join(":").toUpperCase() ?? "";
+  form.mac_addr = formatted;
+  // keep cursor at end
+  const input = e.target as HTMLInputElement;
+  requestAnimationFrame(() => { input.value = formatted; });
+}
 
 const availableBuildings = computed(() => {
   if (!form.site_id) return [];
