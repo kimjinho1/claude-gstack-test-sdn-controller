@@ -1,3 +1,4 @@
+from collections import deque
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -102,6 +103,24 @@ async def create_link(
     child = await db.get(Device, body.child_id)
     if not parent or not child:
         raise HTTPException(status_code=404, detail="장비를 찾을 수 없습니다.")
+
+    # Cycle detection: adding parent→child creates a cycle if child can already reach parent
+    all_links_result = await db.execute(select(DeviceLink))
+    all_links = all_links_result.scalars().all()
+    # Build adjacency list (directed: child_id reachable from parent_id)
+    adj: dict[int, list[int]] = {}
+    for lnk in all_links:
+        adj.setdefault(lnk.parent_id, []).append(lnk.child_id)
+    # BFS from child_id — if we can reach parent_id, adding this link creates a cycle
+    visited: set[int] = set()
+    queue: deque[int] = deque([body.child_id])
+    while queue:
+        node = queue.popleft()
+        if node == body.parent_id:
+            raise HTTPException(status_code=400, detail="순환 링크는 허용되지 않습니다.")
+        if node not in visited:
+            visited.add(node)
+            queue.extend(adj.get(node, []))
 
     existing = await db.execute(
         select(DeviceLink).where(

@@ -27,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - uses: superfly/flyctl-actions/setup-flyctl@v1
 
       - name: Deploy to Fly.io
         # flyctl은 backend/fly.toml의 위치를 기준으로 build context를 backend/ 로 설정.
@@ -39,7 +39,7 @@ jobs:
   # ─── 3. Frontend → Vercel ────────────────────────────
   deploy-frontend:
     name: Deploy Frontend (Vercel)
-    needs: test
+    needs: [test, deploy-backend]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

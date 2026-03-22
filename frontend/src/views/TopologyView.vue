@@ -263,6 +263,8 @@ async function loadTopology() {
 
     nodes.value = applyLayout(newNodes, newEdges)
     edges.value = newEdges
+  } catch {
+    topologyError.value = '토폴로지 로딩에 실패했습니다. 페이지를 새로고침하세요.'
   } finally {
     loading.value = false
   }
@@ -289,7 +291,11 @@ function minimapColor(node: Node): string {
 // drag-to-connect creates a new link
 async function onConnect(params: Connection) {
   if (!params.source || !params.target) return
-  await createLink(Number(params.source), Number(params.target))
+  try {
+    await createLink(Number(params.source), Number(params.target))
+  } catch {
+    topologyError.value = '링크 생성에 실패했습니다. 다시 시도하세요.'
+  }
 }
 
 function onNodeClick({ node }: NodeMouseEvent) {
