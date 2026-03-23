@@ -96,6 +96,9 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app
+    networks:
+      - default
+      - sdn-lab
     command: celery -A app.tasks.celery_app beat --loglevel=info
 
   frontend:

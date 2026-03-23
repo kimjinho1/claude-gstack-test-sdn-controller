@@ -61,12 +61,11 @@ flyctl auth login
 # 앱 생성
 flyctl apps create sdn-controller
 
-# Postgres 생성 및 연결 (DATABASE_URL 자동 설정)
+# Postgres 생성 및 연결
 flyctl postgres create --name sdn-controller-db --region nrt
 flyctl postgres attach sdn-controller-db --app sdn-controller
-# → DATABASE_URL 시크릿이 자동 추가됨
-# → DATABASE_URL 형식: postgresql+asyncpg://user:pass@host.flycast:5432/db
-#   (asyncpg SSL 이슈 때문에 postgresql+asyncpg:// 스킴이 필요함)
+# → DATABASE_URL 시크릿이 자동으로 추가되지만 스킴이 postgresql:// (psycopg2)로 설정됨
+# → asyncpg를 쓰기 때문에 postgresql+asyncpg:// 스킴으로 덮어써야 함:
 flyctl secrets set DATABASE_URL="postgresql+asyncpg://USER:PASS@sdn-controller-db.flycast:5432/sdn_controller"
 
 # Upstash Redis (https://console.upstash.com 에서 생성)
