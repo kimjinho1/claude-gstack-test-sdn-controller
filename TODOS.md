@@ -131,3 +131,17 @@ adversarial review (v0.1.3.0 shipping)에서 발견됨.
 **Context:** adversarial review (v0.1.9.0)에서 발견. `backend/app/protocols/ssh/ssh_driver.py` `_poll_device` 함수. 단기 해결: 모든 주요 필드가 빈 문자열이면 스테일로 판단하여 `consecutive_failures` 증가.
 
 **Depends on / blocked by:** 없음
+
+---
+
+## TODO-8: 컨트롤러 API 원자성 및 경쟁 조건 수정
+
+**What:** `backend/app/api/controller.py`의 다음 이슈들 수정:
+1. `launch_virtual_device`: docker run 성공 후 db.commit() 실패 시 컨테이너 orphan 발생 → finally 블록에서 `docker rm -f` 처리 필요
+2. `list_virtual_devices`: GET 요청에서 DB 쓰기/커밋 수행 → Celery beat 백그라운드 태스크로 이전
+3. SSH 포트 중복 체크: DB 레벨 유니크 인덱스 없이 애플리케이션 레벨 체크만 존재 → 동시 요청 시 TOCTOU 경쟁 조건
+4. `stop_virtual_device`: 중지 후 `container_id`/`container_ip`를 NULL로 초기화하지 않음
+
+**Why:** adversarial review (v0.1.9.1)에서 발견. 동시 요청이 많으면 컨테이너 누수, 스테일 상태 데이터, DB 불일치가 발생할 수 있음.
+
+**Depends on / blocked by:** 없음
