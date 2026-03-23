@@ -132,6 +132,13 @@ git push origin main
 | Backend Hosting | Fly.io |
 | Frontend Hosting | Vercel |
 
+## 관련 문서
+
+- [DEPLOYMENT.md](DEPLOYMENT.md) — 배포 아키텍처 및 DB 충돌 방지 전략 상세
+- [frontend/TESTING.md](frontend/TESTING.md) — 프론트엔드 테스트 프레임워크(Vitest) 실행 방법
+
+---
+
 ## 주요 알려진 이슈
 
 - **가상 장비 (cEOS)**: `/controller` 화면에서 cEOS 실행은 로컬 환경에서만 가능합니다. Fly.io에서는 Docker-in-Docker 불가.
