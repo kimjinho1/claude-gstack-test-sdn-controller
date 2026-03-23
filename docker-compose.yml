@@ -96,6 +96,9 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app
+    networks:
+      - default
+      - sdn-lab
     command: celery -A app.tasks.celery_app beat --loglevel=info
 
   frontend:
@@ -116,4 +119,5 @@ volumes:
 networks:
   default:
   sdn-lab:
-    external: true
+    # Shared network for cEOS virtual device containers (created by docker-compose)
+    # cEOS containers are connected to this network at runtime by the SDN controller

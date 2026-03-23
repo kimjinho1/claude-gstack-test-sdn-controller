@@ -2,6 +2,20 @@
 
 All notable changes to the SDN Controller project will be documented in this file.
 
+## [0.1.9.1] - 2026-03-23
+
+### Added
+- **README.md** — 로컬 개발(docker-compose) 및 프로덕션(Fly.io + Vercel) 전체 셋업 가이드 추가.
+
+### Fixed
+- **asyncpg SSL ConnectionResetError (Fly.io)** — Fly.io 내부 네트워크(flycast)는 TLS를 지원하지 않아 asyncpg의 기본 `ssl=prefer`가 `ConnectionResetError`를 발생시킴. `connect_args={"ssl": False}` 로 SSL 완전 비활성화. `sslmode=disable` URL 파라미터 방식은 asyncpg가 `sslmode` kwarg를 거부하여 동작하지 않음.
+- **Alembic SSL 누락** — `alembic/env.py`가 `async_engine_from_config`로 별도 엔진을 생성하여 `database.py`의 SSL 설정이 적용되지 않았음. `create_async_engine`으로 교체하고 동일한 `connect_args` 적용.
+- **docker-compose sdn-lab 네트워크** — `external: true` 설정 시 네트워크가 없으면 compose가 즉시 실패함. compose가 자동 생성하도록 수정.
+- **docker-compose beat 서비스 네트워크 누락** — `beat` 서비스에 `networks` 키가 없어 다른 서비스와 불일치. `default` 및 `sdn-lab` 네트워크 명시 추가.
+
+### Changed
+- **README 배포 가이드** — `flyctl postgres attach` 후 DATABASE_URL 스킴이 `postgresql://`(psycopg2)로 자동 설정되는 이유와 `postgresql+asyncpg://`로 수동 덮어써야 하는 이유 명시.
+
 ## [0.1.9.0] - 2026-03-23
 
 ### Added
